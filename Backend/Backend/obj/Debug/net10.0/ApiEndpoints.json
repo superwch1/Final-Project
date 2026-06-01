@@ -1,0 +1,60 @@
+[
+  {
+    "ContainingType": "Backend.Controllers.DeviceController",
+    "Method": "Notify",
+    "RelativePath": "Device/{macAddress}/state/{turnedOn}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "macAddress",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "turnedOn",
+        "Type": "System.Boolean",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.DeviceController",
+    "Method": "Register",
+    "RelativePath": "Device/register/{macAddress}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "macAddress",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.DeviceController",
+    "Method": "State",
+    "RelativePath": "Device/state",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "X-Mac-Address",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "longPolling",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
