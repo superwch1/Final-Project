@@ -1,43 +1,41 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Backend.Enumerations;
+using Microsoft.AspNetCore.Mvc;
+using System.Net.WebSockets;
 
 namespace Backend.Controllers
 {
-    [ApiController]
     [Route("[controller]")]
     public class DeviceController : ControllerBase
     {
-        private readonly DeviceManager _notifier;
+        private readonly ConnectionsManager _connectionsManager;
 
-        public DeviceController(DeviceManager notifier)
+        public DeviceController(ConnectionsManager connectionsManager)
         {
-            _notifier = notifier;
+            _connectionsManager = connectionsManager;
         }
 
 
-        [HttpGet("register/{macAddress}")]
-        public async Task<IActionResult> Register(string macAddress)
+        [HttpGet("ws")]
+        public async Task WebSocket([FromQuery] string macAddress, [FromQuery] DeviceType deviceType, CancellationToken cancellationToken)
         {
-            return Ok(macAddress);
+            Console.WriteLine($"Connected - {macAddress}");
+            if (HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                using WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                await _connectionsManager.DeviceEcho(webSocket, macAddress, deviceType, cancellationToken);
+            }
+            else
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            }
         }
 
 
-        [HttpGet("{macAddress}/state/{turnedOn}")]
-        public async Task<IActionResult> Notify(string macAddress, bool turnedOn)
+        [HttpGet("{macAddress}/{actuatorState}")]
+        public async Task<ActionResult> UpdateActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
         {
-            _notifier.NotifyActuatorState(macAddress, turnedOn);
-            return Ok(macAddress);
-        }
-
-
-        // Long poll: held open until desired state changes or ~20s elapse.
-        [HttpGet("state")]
-        public async Task<IActionResult> State([FromHeader(Name = "X-Mac-Address")] string macAddress, CancellationToken cancellationToken, [FromQuery] bool longPolling = false)
-        {
-            bool state = longPolling 
-                ? await _notifier.WaitForDeviceStateChangeAsync(macAddress, TimeSpan.FromSeconds(20), cancellationToken) 
-                : _notifier.GetDeviceState(macAddress);
-
-            return Ok(state);  
+            await _connectionsManager.SetActuatorState(macAddress, actuatorState, cancellationToken);
+            return Ok($"Message sent to device {macAddress}");
         }
     }
 }

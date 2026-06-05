@@ -1,56 +1,46 @@
 #include "WiFiManager.h"
-#include "RoleDetector.h"
+#include "DeviceManager.h"
+#include "WebSocketClient.h"
+
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 
-const int rolePin1 = D6;
-const int rolePin2 = D7;
-RoleDetector roleDetector(rolePin1, rolePin2);
+const int typePin1 = D6;
+const int typePin2 = D7;
+const int outputPin = D1;
+DeviceManager deviceManager(typePin1, typePin2, outputPin);
 
 const int successPin = D4;
 const int loadingPin = D0;
 WiFiManager wifiManager(successPin, loadingPin);
 
+const String host = "192.168.1.7";
+const int port = 5000;
+const String path = "/device/ws?macAddress=" + WiFi.macAddress() + "&deviceType=" + deviceManager.getType();
+WebSocketClient webSocketClient(host, port, path);
+
 void setup() {
   Serial.begin(115200);
-  roleDetector.detectRole();
-  wifiManager.begin();
-
   pinMode(D1, OUTPUT);
-}
 
-void loop() {
-  
-  if (wifiManager.isConnected()) {
-
-    WiFiClient client;
-    HTTPClient http;
-
-    String url = "http://192.168.1.7:5000/device/state?longPolling=true";
-
-    http.begin(client, url);
-    http.addHeader("X-Mac-Address", WiFi.macAddress());
-    http.setTimeout(true ? 30000 : 5000);   // long hold needs a long read timeout
-
-    int statusCode = http.GET(); 
-    if (statusCode == 200) {
-      String body = http.getString();   // bare JSON boolean: "true" or "false"
-      body.trim();
-
-      bool result = (body == "true") ? true : false;
-      if (result == true) {
-        digitalWrite(D1, HIGH);
-      } else {
-        digitalWrite(D1, LOW);
-      }
-    }
-
-    http.end();
-
-  } else {
+  // wait until the ESP8266 connected to WiFi
+  wifiManager.begin();
+  while (!wifiManager.isConnected()) {
     wifiManager.handleClient();
   }
 
-  delay(100);
+  webSocketClient.begin();
+  webSocketClient.onMessageReceived.subscribe([](String message){
+    deviceManager.processMessage(message);
+  });
+  
+  deviceManager.onTelemetrySent.subscribe([](String telemetry) {
+    webSocketClient.sendMessage(telemetry);
+  });
+}
+
+void loop() {
+  webSocketClient.loop();
+  deviceManager.loop();
 }
 

@@ -4,7 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddSingleton<DeviceManager>();
+builder.Services.AddSingleton<ConnectionsManager>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -25,15 +25,18 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+else
+{
+    app.UseHttpsRedirection();
+}
 
-// app.UseHttpsRedirection();
+app.UseWebSockets(new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromSeconds(10),
+    KeepAliveTimeout = TimeSpan.FromSeconds(5)
+});
 
 app.UseAuthorization();
-
-WebSocketOptions webSocketOptions = new WebSocketOptions
-{
-    KeepAliveInterval = TimeSpan.FromMinutes(2)
-};
 
 app.MapControllers();
 
