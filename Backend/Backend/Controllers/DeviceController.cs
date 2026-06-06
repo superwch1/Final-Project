@@ -1,5 +1,6 @@
 ﻿using Backend.Connections;
 using Backend.Enumerations;
+using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
 
@@ -29,6 +30,14 @@ namespace Backend.Controllers
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             }
+        }
+
+
+        [HttpPost("actuator/state")]
+        public async Task<ActionResult> SetActuatorState(SetActuatorStateRequest request, CancellationToken cancellationToken)
+        {
+            await _connectionMediator.SetActuatorState(request.MacAddress, request.ActuatorState, cancellationToken);
+            return Ok($"Message sent to device {request.MacAddress}");
         }
     }
 }

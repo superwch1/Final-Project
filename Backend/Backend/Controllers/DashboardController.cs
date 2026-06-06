@@ -1,6 +1,5 @@
-﻿using Backend.Connections;
-using Backend.Enumerations;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Net.WebSockets;
 
 namespace Backend.Controllers
 {
@@ -15,11 +14,19 @@ namespace Backend.Controllers
         }
 
 
-        [HttpGet("{macAddress}/{actuatorState}")]
-        public async Task<ActionResult> SetActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
+        [HttpGet("ws")]
+        public async Task WebSocket(CancellationToken cancellationToken)
         {
-            await _connectionMediator.SetActuatorState(macAddress, actuatorState, cancellationToken);
-            return Ok($"Message sent to device {macAddress}");
+            Console.WriteLine($"Connected dashboard");
+            if (HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                using WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                await _connectionMediator.DashboardEcho(webSocket, cancellationToken);
+            }
+            else
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            }
         }
     }
 }

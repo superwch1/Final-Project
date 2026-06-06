@@ -6,13 +6,13 @@ using System.Text.Json;
 
 namespace Backend.Connections
 {
-    public sealed class DeviceConnections : BaseConnection
+    public sealed class DeviceConnections : BaseConnections
     {
         private readonly ConcurrentDictionary<Guid, DeviceType> _deviceTypeByConnectionId = new();
         private readonly ConcurrentDictionary<Guid, string> _macAddressByConnectionId = new();
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<Guid, object?>> _connectionIdsByMacAddress = new();
 
-        private event EventHandler<(string MacAddress, BaseTelemetry Telemetry)> _telemetryReceived = delegate { };
+        private event Func<(string MacAddress, BaseTelemetry Telemetry), Task>? _telemetryReceived;
 
 
         public async Task DeviceEcho(WebSocket webSocket, string macAddress, DeviceType deviceType, IEnumerable<string> initialMessages, CancellationToken cancellationToken)
@@ -33,14 +33,15 @@ namespace Backend.Connections
         {
             if (_connectionIdsByMacAddress.TryGetValue(macAddress, out ConcurrentDictionary<Guid, object?>? connectionIds) && connectionIds != null)
             {
-                await SendMessage(connectionIds.Keys, actuatorState.ToString(), cancellationToken);
+                foreach(Guid connectionId in connectionIds.ToArray().Select(x => x.Key))
+                {
+                    await SendMessageAsync(connectionId, actuatorState.ToString(), cancellationToken);
+                }
             }
         }
 
-        public void SubscribeToTelemetryReceived(EventHandler<(string MacAddress, BaseTelemetry Telemetry)> eventHandler)
-        {
-            _telemetryReceived += eventHandler;
-        }
+        public void SubscribeToTelemetryReceived(Func<(string MacAddress, BaseTelemetry Telemetry), Task> eventHandler)
+            => _telemetryReceived += eventHandler;
 
         protected override async Task OnMessageReceived(Guid connectionId, string message)
         {
@@ -63,16 +64,16 @@ namespace Backend.Connections
                             break;
 
                         case DeviceType.FanActuator:
-                            telemetry = JsonSerializer.Deserialize<FanActuatorTelemetry>(message, options);
+                            telemetry = JsonSerializer.Deserialize<FanTelemetry>(message, options);
                             break;
 
                         case DeviceType.LedActuator:
-                            telemetry = JsonSerializer.Deserialize<LedActuatorTelemetry>(message, options);
+                            telemetry = JsonSerializer.Deserialize<LedTelemetry>(message, options);
                             break;
                     }
 
-                    if (telemetry != null)
-                        _telemetryReceived.Invoke(this, (macAddress, telemetry));
+                    if (_telemetryReceived != null && telemetry != null)
+                        await _telemetryReceived.Invoke((macAddress, telemetry));
                 }
                 catch
                 {

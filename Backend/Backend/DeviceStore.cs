@@ -12,6 +12,16 @@ namespace Backend
         private readonly ConcurrentDictionary<string, BaseTelemetry> _telemetryByMacAddress = new();
 
 
+        public IEnumerable<string> GetMacAddresses()
+        {
+            return _telemetryByMacAddress.ToArray().Select(x => x.Key);
+        }
+
+        public bool TryGetTelemetry(string macAddress, out BaseTelemetry? telemetry)
+        {
+            return _telemetryByMacAddress.TryGetValue(macAddress, out telemetry);
+        }
+
         public ActuatorState GetActuatorState(string macAddress)
         {
             return _actuatorStateByMacAddress.GetOrAdd(macAddress, _ => DefaultActuatorState);
@@ -59,11 +69,11 @@ namespace Backend
 
         private static bool HasStateChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
         {
-            if (telemetry is LedActuatorTelemetry ledTelemetry && oldTelemetry is LedActuatorTelemetry oldLedTelemetry)
+            if (telemetry is LedTelemetry ledTelemetry && oldTelemetry is LedTelemetry oldLedTelemetry)
             {
                 return ledTelemetry.ActuatorState != oldLedTelemetry.ActuatorState;
             }
-            else if (telemetry is FanActuatorTelemetry fanTelemetry && oldTelemetry is FanActuatorTelemetry oldFanTelemetry)
+            else if (telemetry is FanTelemetry fanTelemetry && oldTelemetry is FanTelemetry oldFanTelemetry)
             {
                 return fanTelemetry.ActuatorState != oldFanTelemetry.ActuatorState;
             }

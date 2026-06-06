@@ -2,7 +2,7 @@
 
 namespace Backend.Models
 {
-    public record LedActuatorTelemetry : BaseTelemetry
+    public record LedTelemetry : BaseTelemetry
     {
         public ActuatorState ActuatorState { get; init; }
     }

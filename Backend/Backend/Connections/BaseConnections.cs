@@ -4,28 +4,26 @@ using System.Text;
 
 namespace Backend.Connections
 {
-    public abstract class BaseConnection
+    public abstract class BaseConnections
     {
         private readonly ConcurrentDictionary<Guid, WebSocket> _webSocketByConnectionId = new();
 
 
         protected abstract Task OnMessageReceived(Guid connectionId, string message);
 
-        protected async Task SendMessage(IEnumerable<Guid> connectionIds, string message, CancellationToken cancellationToken)
+        protected async Task SendMessageAsync(Guid connectionId, string message, CancellationToken cancellationToken)
         {
-            foreach (Guid connectionId in connectionIds)
+            if (_webSocketByConnectionId.TryGetValue(connectionId, out WebSocket? webSocket) && webSocket != null && webSocket.State == WebSocketState.Open)
             {
-                await SendMessage(connectionId, message, cancellationToken);
+                await SendTextAsync(webSocket, message, cancellationToken);
             }
         }
 
-        protected async Task SendMessage(Guid connectionId, string message, CancellationToken cancellationToken)
+        protected async Task SendMessageToAllAsync(string message, CancellationToken cancellationToken)
         {
-            if (_webSocketByConnectionId.TryGetValue(connectionId, out WebSocket? webSocket) &&
-                webSocket != null && webSocket.State == WebSocketState.Open)
+            foreach (WebSocket webSocket in _webSocketByConnectionId.ToArray().Select(x => x.Value))
             {
-                byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-                await webSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, cancellationToken);
+                await SendTextAsync(webSocket, message, cancellationToken);
             }
         }
 
@@ -36,25 +34,33 @@ namespace Backend.Connections
                 _webSocketByConnectionId.AddOrUpdate(connectionId, webSocket, (_, _) => webSocket);
                 foreach (string initialMessage in initialMessages)
                 {
-                    await SendMessage(connectionId, initialMessage, cancellationToken);
+                    await SendTextAsync(webSocket, initialMessage, cancellationToken);
                 }
 
                 byte[] buffer = new byte[1024 * 4];
                 WebSocketReceiveResult receivedResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
 
-                do
+                while (!receivedResult.CloseStatus.HasValue)
                 {
                     string receivedMessage = Encoding.UTF8.GetString(buffer, 0, receivedResult.Count);
                     await OnMessageReceived(connectionId, receivedMessage);
                     receivedResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
                 }
-                while (!receivedResult.CloseStatus.HasValue);
 
                 await webSocket.CloseAsync(receivedResult.CloseStatus.Value, receivedResult.CloseStatusDescription, cancellationToken);
             }
             finally
             {
                 _webSocketByConnectionId.TryRemove(connectionId, out _);
+            }
+        }
+
+        private static async Task SendTextAsync(WebSocket webSocket, string message, CancellationToken cancellationToken)
+        {
+            if (webSocket.State == WebSocketState.Open)
+            {
+                byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+                await webSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, cancellationToken);
             }
         }
     }

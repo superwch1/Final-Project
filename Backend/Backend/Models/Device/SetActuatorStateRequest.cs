@@ -2,7 +2,7 @@
 
 namespace Backend.Models
 {
-    public record FanActuatorTelemetry : BaseTelemetry
+    public record SetActuatorStateRequest : BaseDeviceRequest
     {
         public ActuatorState ActuatorState { get; init; }
     }
