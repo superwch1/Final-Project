@@ -1,10 +1,12 @@
 using Backend;
+using Backend.Connections;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddSingleton<ConnectionsManager>();
+builder.Services.AddSingleton<DeviceConnections>();
+builder.Services.AddSingleton<DeviceStore>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

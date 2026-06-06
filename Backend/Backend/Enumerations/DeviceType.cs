@@ -7,7 +7,7 @@ namespace Backend.Enumerations
     {
         Unknown,
         LightSensor,
-        TempSensor,
+        TempAndHumidSensor,
         LedActuator,
         FanActuator,
     }
@@ -17,6 +17,14 @@ namespace Backend.Enumerations
         public static bool IsActuator(this DeviceType deviceType)
         {
             if (deviceType == DeviceType.LedActuator || deviceType == DeviceType.FanActuator)
+                return true;
+
+            return false;
+        }
+
+        public static bool IsSensor(this DeviceType deviceType)
+        {
+            if (deviceType == DeviceType.LightSensor || deviceType == DeviceType.TempAndHumidSensor)
                 return true;
 
             return false;

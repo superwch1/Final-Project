@@ -6,7 +6,7 @@
 
 enum DeviceType {
   LightSensor,
-  TempSensor,
+  TempAndHumidSensor,
   LedActuator,
   FanActuator,
   Unknown

@@ -2,7 +2,7 @@
 
 namespace Backend.Models
 {
-    public abstract record ITelemetry
+    public abstract record BaseTelemetry
     {
         public DeviceType DeviceType { get; init; }
 

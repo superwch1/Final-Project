@@ -2,7 +2,7 @@
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 
-constexpr unsigned long TelemetryInterval = 5000;  // ms
+constexpr unsigned long TelemetryInterval = 1000;  // ms
 
 DeviceManager::DeviceManager(int typePin1, int typePin2, int outputPin)
   : _typePin1(typePin1), _typePin2(typePin2), _outputPin(outputPin) {
@@ -15,7 +15,7 @@ DeviceManager::DeviceManager(int typePin1, int typePin2, int outputPin)
   if (digitalRead(_typePin1) == LOW && digitalRead(_typePin2) == LOW) {
     _type = LightSensor;
   } 
-  // temp sensor: only typePin1 is connected to the ground pin 
+  // temp and humid sensor: only typePin1 is connected to the ground pin 
   else if (digitalRead(_typePin1) == LOW && digitalRead(_typePin2) == HIGH) {
     _type = TempSensor;
   } 
@@ -37,8 +37,8 @@ String DeviceManager::getType() {
     case LightSensor: 
       return "LightSensor";
 
-    case TempSensor:  
-      return "TempSensor";
+    case TempAndHumidSensor:  
+      return "TempAndHumidSensor";
 
     case LedActuator: 
       return "LedActuator";
@@ -79,7 +79,7 @@ void DeviceManager::loop() {
     doc["actuatorState"] = digitalRead(_outputPin) == HIGH ? "On" : "Off";  
   }
   
-  String out;
-  serializeJson(doc, out);
-  onTelemetrySent.emit(out);
+  String telemetry;
+  serializeJson(doc, telemetry);
+  onTelemetrySent.emit(telemetry);
 }

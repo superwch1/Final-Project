@@ -1,4 +1,5 @@
-﻿using Backend.Enumerations;
+﻿using Backend.Connections;
+using Backend.Enumerations;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
 
@@ -7,11 +8,11 @@ namespace Backend.Controllers
     [Route("[controller]")]
     public class DeviceController : ControllerBase
     {
-        private readonly ConnectionsManager _connectionsManager;
+        private readonly DeviceConnections _deviceConnections;
 
-        public DeviceController(ConnectionsManager connectionsManager)
+        public DeviceController(DeviceConnections deviceConnections)
         {
-            _connectionsManager = connectionsManager;
+            _deviceConnections = deviceConnections;
         }
 
 
@@ -22,20 +23,12 @@ namespace Backend.Controllers
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await _connectionsManager.DeviceEcho(webSocket, macAddress, deviceType, cancellationToken);
+                await _deviceConnections.DeviceEcho(webSocket, macAddress, deviceType, cancellationToken);
             }
             else
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             }
-        }
-
-
-        [HttpGet("{macAddress}/{actuatorState}")]
-        public async Task<ActionResult> UpdateActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
-        {
-            await _connectionsManager.SetActuatorState(macAddress, actuatorState, cancellationToken);
-            return Ok($"Message sent to device {macAddress}");
         }
     }
 }
