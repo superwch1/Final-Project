@@ -8,11 +8,11 @@ namespace Backend.Controllers
     [Route("[controller]")]
     public class DeviceController : ControllerBase
     {
-        private readonly DeviceConnections _deviceConnections;
+        private readonly ConnectionMediator _connectionMediator;
 
-        public DeviceController(DeviceConnections deviceConnections)
+        public DeviceController(ConnectionMediator connectionMediator)
         {
-            _deviceConnections = deviceConnections;
+            _connectionMediator = connectionMediator;
         }
 
 
@@ -23,7 +23,7 @@ namespace Backend.Controllers
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await _deviceConnections.DeviceEcho(webSocket, macAddress, deviceType, cancellationToken);
+                await _connectionMediator.DeviceEcho(webSocket, macAddress, deviceType, cancellationToken);
             }
             else
             {

@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Services.AddSingleton<ConnectionMediator>();
 builder.Services.AddSingleton<DeviceConnections>();
 builder.Services.AddSingleton<DeviceStore>();
 

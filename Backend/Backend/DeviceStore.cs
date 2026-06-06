@@ -1,5 +1,4 @@
-﻿using Backend.Connections;
-using Backend.Enumerations;
+﻿using Backend.Enumerations;
 using Backend.Models;
 using System.Collections.Concurrent;
 
@@ -12,21 +11,13 @@ namespace Backend
         private readonly ConcurrentDictionary<string, ActuatorState> _actuatorStateByMacAddress = new();
         private readonly ConcurrentDictionary<string, BaseTelemetry> _telemetryByMacAddress = new();
 
-        private readonly DeviceConnections _deviceConnections;
-
-        public DeviceStore(DeviceConnections deviceConnections)
-        {
-            _deviceConnections = deviceConnections;
-        }
-
 
         public ActuatorState GetActuatorState(string macAddress)
         {
             return _actuatorStateByMacAddress.GetOrAdd(macAddress, _ => DefaultActuatorState);
         }
 
-
-        public async Task SetActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
+        public async Task<bool> SetActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
         {
             bool hasStateChanged = false;
             _actuatorStateByMacAddress.AddOrUpdate(macAddress, actuatorState, (_, oldActuatorState) =>
@@ -35,16 +26,10 @@ namespace Backend
                 return actuatorState;
             });
 
-            if (!hasStateChanged)
-                return;
-
-            await _deviceConnections.NotifyActuatorState(macAddress, actuatorState, cancellationToken);
-
-            // also need to notify dashboard connection
+            return hasStateChanged;
         }
 
-
-        public void UploadTelemetry(string macAddress, BaseTelemetry telemetry)
+        public bool RecordTelemetry(string macAddress, BaseTelemetry telemetry)
         {
             bool hasChanged = false;
             _telemetryByMacAddress.AddOrUpdate(macAddress, telemetry, (_, oldTelemetry) =>
@@ -53,12 +38,8 @@ namespace Backend
                 return telemetry;
             });
 
-            if (!hasChanged)
-                return;
-
-            // notify dashboard connection reading has changed
+            return hasChanged;
         }
-
 
         private static bool HasReadingChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
         {
@@ -75,7 +56,6 @@ namespace Backend
 
             return false;
         }
-
 
         private static bool HasStateChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
         {

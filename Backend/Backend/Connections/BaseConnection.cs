@@ -29,13 +29,15 @@ namespace Backend.Connections
             }
         }
 
-        protected virtual async Task Echo(Guid connectionId, WebSocket webSocket, CancellationToken cancellationToken, string initialMessage = "")
+        protected virtual async Task Echo(Guid connectionId, WebSocket webSocket, IEnumerable<string> initialMessages, CancellationToken cancellationToken)
         {
             try
             {
                 _webSocketByConnectionId.AddOrUpdate(connectionId, webSocket, (_, _) => webSocket);
-                if (!string.IsNullOrEmpty(initialMessage))
+                foreach (string initialMessage in initialMessages)
+                {
                     await SendMessage(connectionId, initialMessage, cancellationToken);
+                }
 
                 byte[] buffer = new byte[1024 * 4];
                 WebSocketReceiveResult receivedResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);

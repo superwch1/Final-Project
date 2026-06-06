@@ -7,18 +7,18 @@ namespace Backend.Controllers
     [Route("[controller]")]
     public class DashboardController : Controller
     {
-        private readonly DeviceStore _deviceStore;
+        private readonly ConnectionMediator _connectionMediator;
 
-        public DashboardController(DeviceStore deviceStore)
+        public DashboardController(ConnectionMediator connectionMediator)
         {
-            _deviceStore = deviceStore;
+            _connectionMediator = connectionMediator;
         }
 
 
         [HttpGet("{macAddress}/{actuatorState}")]
-        public async Task<ActionResult> UpdateActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
+        public async Task<ActionResult> SetActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
         {
-            await _deviceStore.SetActuatorState(macAddress, actuatorState, cancellationToken);
+            await _connectionMediator.SetActuatorState(macAddress, actuatorState, cancellationToken);
             return Ok($"Message sent to device {macAddress}");
         }
     }

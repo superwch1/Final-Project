@@ -12,30 +12,16 @@ namespace Backend.Connections
         private readonly ConcurrentDictionary<Guid, string> _macAddressByConnectionId = new();
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<Guid, object?>> _connectionIdsByMacAddress = new();
 
-        private readonly DeviceStore _deviceStore;
-
-        public DeviceConnections(DeviceStore deviceStore)
-        {
-            _deviceStore = deviceStore;
-        }
+        private event EventHandler<(string MacAddress, BaseTelemetry Telemetry)> _telemetryReceived = delegate { };
 
 
-        public async Task DeviceEcho(WebSocket webSocket, string macAddress, DeviceType deviceType, CancellationToken cancellationToken)
+        public async Task DeviceEcho(WebSocket webSocket, string macAddress, DeviceType deviceType, IEnumerable<string> initialMessages, CancellationToken cancellationToken)
         {
             Guid connectionId = Guid.NewGuid();
-
             try
             {
                 AddDeviceConnection(connectionId, macAddress, deviceType);
-
-                string initialMessage = "";
-                if (deviceType.IsActuator())
-                {
-                    ActuatorState actuatorState = _deviceStore.GetActuatorState(macAddress);
-                    initialMessage = actuatorState.ToString();
-                }
-
-                await Echo(connectionId, webSocket, cancellationToken, initialMessage: initialMessage);
+                await Echo(connectionId, webSocket, initialMessages, cancellationToken);
             }
             finally
             {
@@ -49,6 +35,11 @@ namespace Backend.Connections
             {
                 await SendMessage(connectionIds.Keys, actuatorState.ToString(), cancellationToken);
             }
+        }
+
+        public void SubscribeToTelemetryReceived(EventHandler<(string MacAddress, BaseTelemetry Telemetry)> eventHandler)
+        {
+            _telemetryReceived += eventHandler;
         }
 
         protected override async Task OnMessageReceived(Guid connectionId, string message)
@@ -81,7 +72,7 @@ namespace Backend.Connections
                     }
 
                     if (telemetry != null)
-                        _deviceStore.UploadTelemetry(macAddress, telemetry);
+                        _telemetryReceived.Invoke(this, (macAddress, telemetry));
                 }
                 catch
                 {
