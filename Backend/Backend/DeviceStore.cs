@@ -39,26 +39,28 @@ namespace Backend
                 return;
 
             await _deviceConnections.NotifyActuatorState(macAddress, actuatorState, cancellationToken);
+
+            // also need to notify dashboard connection
         }
 
 
         public void UploadTelemetry(string macAddress, BaseTelemetry telemetry)
         {
-            bool hasReadingChanged = false;
+            bool hasChanged = false;
             _telemetryByMacAddress.AddOrUpdate(macAddress, telemetry, (_, oldTelemetry) =>
             {
-                hasReadingChanged = HasReadingChanged(telemetry, oldTelemetry);
+                hasChanged = HasReadingChanged(telemetry, oldTelemetry) || HasStateChanged(telemetry, oldTelemetry);
                 return telemetry;
             });
 
-            if (!hasReadingChanged)
+            if (!hasChanged)
                 return;
 
             // notify dashboard connection reading has changed
         }
 
 
-        private bool HasReadingChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
+        private static bool HasReadingChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
         {
             if (telemetry is TempAndHumidTelemetry tempAndHumidTelemetry && oldTelemetry is TempAndHumidTelemetry oldTempAndHumidTelemetry)
             {
@@ -69,6 +71,21 @@ namespace Backend
             else if (telemetry is LightTelemetry lightTelemetry && oldTelemetry is LightTelemetry oldLightTelemetry)
             {
                 return lightTelemetry.LightReading != oldLightTelemetry.LightReading;
+            }
+
+            return false;
+        }
+
+
+        private static bool HasStateChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
+        {
+            if (telemetry is LedActuatorTelemetry ledTelemetry && oldTelemetry is LedActuatorTelemetry oldLedTelemetry)
+            {
+                return ledTelemetry.ActuatorState != oldLedTelemetry.ActuatorState;
+            }
+            else if (telemetry is FanActuatorTelemetry fanTelemetry && oldTelemetry is FanActuatorTelemetry oldFanTelemetry)
+            {
+                return fanTelemetry.ActuatorState != oldFanTelemetry.ActuatorState;
             }
 
             return false;
