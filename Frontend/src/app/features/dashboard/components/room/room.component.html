@@ -1,0 +1,22 @@
+@for (device of devices(); track device.mac) {
+  <div>
+    <h4>{{ device.data().deviceType }}</h4>
+    <p>Mac Address: {{ device.data().macAddress }}</p>
+    <p>WiFi Signal: {{ device.data().wiFiSignal }} dBm</p>
+    <p>Free heap: {{ device.data().freeHeap }}</p>
+
+    @if (device.data().deviceType == DeviceType.LedActuator) {
+      <p>Actuator state: {{ asLed(device.data()).actuatorState }}</p>
+
+      @if (asLed(device.data()).actuatorState == ActuatorState.Off) {
+      <button (click)="setActuatorState(device.data().macAddress, ActuatorState.On)">Switch On</button>
+      } @else {
+        <button (click)="setActuatorState(device.data().macAddress, ActuatorState.Off)">Switch Off</button>
+      }
+    }
+
+    @if (device.data().deviceType == DeviceType.LightSensor) {
+      <p>Light reading: {{ asLight(device.data()).lightReading }}</p>
+    }
+  </div>
+}

@@ -7,8 +7,9 @@
 
 const int typePin1 = D6;
 const int typePin2 = D7;
+const int inputPin = A0;
 const int outputPin = D1;
-DeviceManager deviceManager(typePin1, typePin2, outputPin);
+DeviceManager deviceManager(typePin1, typePin2, inputPin, outputPin);
 
 const int successPin = D4;
 const int loadingPin = D0;
@@ -21,7 +22,6 @@ WebSocketClient webSocketClient(host, port, path);
 
 void setup() {
   Serial.begin(115200);
-  pinMode(D1, OUTPUT);
 
   // wait until the ESP8266 connected to WiFi
   wifiManager.begin();

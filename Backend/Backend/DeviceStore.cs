@@ -41,42 +41,30 @@ namespace Backend
 
         public bool RecordTelemetry(string macAddress, BaseTelemetry telemetry)
         {
-            bool hasChanged = false;
+            // default is true since when device just connected, it is Add 
+            bool hasChanged = true;
             _telemetryByMacAddress.AddOrUpdate(macAddress, telemetry, (_, oldTelemetry) =>
             {
-                hasChanged = HasReadingChanged(telemetry, oldTelemetry) || HasStateChanged(telemetry, oldTelemetry);
+                hasChanged = HasTelemetryChanged(telemetry, oldTelemetry);
                 return telemetry;
             });
 
             return hasChanged;
         }
 
-        private static bool HasReadingChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
+        private static bool HasTelemetryChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
         {
             if (telemetry is TempAndHumidTelemetry tempAndHumidTelemetry && oldTelemetry is TempAndHumidTelemetry oldTempAndHumidTelemetry)
-            {
-                return
-                    tempAndHumidTelemetry.TemperatureReading != oldTempAndHumidTelemetry.TemperatureReading ||
-                    tempAndHumidTelemetry.HumidityReading != oldTempAndHumidTelemetry.HumidityReading;
-            }
+                return tempAndHumidTelemetry != oldTempAndHumidTelemetry;
+
             else if (telemetry is LightTelemetry lightTelemetry && oldTelemetry is LightTelemetry oldLightTelemetry)
-            {
-                return lightTelemetry.LightReading != oldLightTelemetry.LightReading;
-            }
+                return lightTelemetry != oldLightTelemetry;
 
-            return false;
-        }
+            else if (telemetry is LedTelemetry ledTelemetry && oldTelemetry is LedTelemetry oldLedTelemetry)
+                return ledTelemetry != oldLedTelemetry;
 
-        private static bool HasStateChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
-        {
-            if (telemetry is LedTelemetry ledTelemetry && oldTelemetry is LedTelemetry oldLedTelemetry)
-            {
-                return ledTelemetry.ActuatorState != oldLedTelemetry.ActuatorState;
-            }
             else if (telemetry is FanTelemetry fanTelemetry && oldTelemetry is FanTelemetry oldFanTelemetry)
-            {
-                return fanTelemetry.ActuatorState != oldFanTelemetry.ActuatorState;
-            }
+                return fanTelemetry != oldFanTelemetry;
 
             return false;
         }

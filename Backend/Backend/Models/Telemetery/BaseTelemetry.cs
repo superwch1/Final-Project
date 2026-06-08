@@ -9,5 +9,7 @@ namespace Backend.Models
         public int WiFiSignal { get; init; }
 
         public int FreeHeap { get; init; }
+
+        public string MacAddress { get; init; } = "";
     }
 }

@@ -73,7 +73,10 @@ namespace Backend.Connections
                     }
 
                     if (_telemetryReceived != null && telemetry != null)
+                    {
                         await _telemetryReceived.Invoke((macAddress, telemetry));
+                    }
+                        
                 }
                 catch
                 {

@@ -14,7 +14,7 @@ enum DeviceType {
 
 class DeviceManager {
   public:
-    DeviceManager(int typePin1, int typePin2, int outputPin);
+    DeviceManager(int typePin1, int typePin2, int inputPin, int outputPin);
     String getType(); 
     void processMessage(String message);
     Event<String> onTelemetrySent;
@@ -23,6 +23,7 @@ class DeviceManager {
   private:
     int _typePin1;
     int _typePin2;
+    int _inputPin;
     int _outputPin;
     DeviceType _type;
     unsigned long _lastTelemetry = 0;

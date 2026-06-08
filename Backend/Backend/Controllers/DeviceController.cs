@@ -6,6 +6,7 @@ using System.Net.WebSockets;
 
 namespace Backend.Controllers
 {
+    [ApiController]
     [Route("[controller]")]
     public class DeviceController : ControllerBase
     {
