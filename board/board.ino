@@ -13,7 +13,7 @@ DeviceManager deviceManager(typePin1, typePin2, inputPin, outputPin);
 
 const int successPin = D4;
 const int loadingPin = D0;
-WiFiManager wifiManager(successPin, loadingPin);
+WiFiManager wifiManager(successPin, loadingPin, deviceManager.getType());
 
 const String host = "192.168.1.7";
 const int port = 5000;

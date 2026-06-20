@@ -2,8 +2,8 @@
 {
     public record TempAndHumidTelemetry : BaseTelemetry
     {
-        public int TemperatureReading { get; init; }
+        public float TemperatureReading { get; init; }
 
-        public int HumidityReading { get; init; }
+        public float HumidityReading { get; init; }
     }
 }

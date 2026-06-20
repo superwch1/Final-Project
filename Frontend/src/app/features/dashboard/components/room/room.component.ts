@@ -5,6 +5,7 @@ import { LedTelemetry } from '../../models/telemetry/led-telemetry.interface';
 import { DeviceApiService } from '../../services/device-api.service';
 import { ActuatorState } from '../../enumerations/actuator-state.enum';
 import { LightTelemetry } from '../../models/telemetry/light-telemetry.interface';
+import { TempAndHumidTelemetry } from '../../models/telemetry/temp-and-humid-telemetry.interface';
 
 @Component({
   selector: 'app-room',
@@ -83,6 +84,10 @@ export class RoomComponent implements OnInit, OnDestroy {
 
   asLight(t: BaseTelemetry): LightTelemetry {
     return t as LightTelemetry;
+  }
+
+  asTempAndHumid(t: BaseTelemetry): TempAndHumidTelemetry {
+    return t as TempAndHumidTelemetry;
   }
 
   protected setActuatorState(macAddress: string, actuatorState: ActuatorState): void {

@@ -5,7 +5,7 @@
 constexpr unsigned long TelemetryInterval = 1000;  // ms
 
 DeviceManager::DeviceManager(int typePin1, int typePin2, int inputPin, int outputPin)
-  : _typePin1(typePin1), _typePin2(typePin2),_inputPin(inputPin), _outputPin(outputPin) {
+  : _typePin1(typePin1), _typePin2(typePin2),_inputPin(inputPin), _outputPin(outputPin), _dht(_outputPin, DHT11) {
 
   pinMode(_typePin1, INPUT_PULLUP);
   pinMode(_typePin2, INPUT_PULLUP);
@@ -19,6 +19,7 @@ DeviceManager::DeviceManager(int typePin1, int typePin2, int inputPin, int outpu
   // temp and humid sensor: only typePin1 is connected to the ground pin 
   else if (digitalRead(_typePin1) == LOW && digitalRead(_typePin2) == HIGH) {
     _type = TempAndHumidSensor;
+    _dht.begin();
   } 
   // led actuator: only typePin2 is connected to the ground pin 
   else if (digitalRead(_typePin1) == HIGH && digitalRead(_typePin2) == LOW) {
@@ -84,6 +85,10 @@ void DeviceManager::loop() {
     Serial.println(analogRead(A0));
     int lightReading = constrain(map(analogRead(A0), 0, 1023, 0, 100), 0, 100);
     doc["lightReading"] = lightReading;
+  }
+  else if (_type == TempAndHumidSensor) {
+    doc["temperatureReading"] = _dht.readTemperature();
+    doc["humidityReading"] = _dht.readHumidity();
   }
   
   String telemetry;

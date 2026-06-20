@@ -6,7 +6,7 @@
 
 class WiFiManager {
   public:
-    WiFiManager(int successPin, int loadingPin);
+    WiFiManager(int successPin, int loadingPin, String hotspotSsid);
     void begin();    
     void handleClient();  
     bool isConnected();
@@ -18,6 +18,7 @@ class WiFiManager {
     ESP8266WebServer _server;
     int _successPin;
     int _loadingPin;
+    String _hotspotSsid;
 };
 
 #endif

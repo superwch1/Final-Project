@@ -5,10 +5,8 @@ const IPAddress local_IP(192, 168, 4, 1);
 const IPAddress gateway(192, 168, 4, 1);
 const IPAddress subnet(255, 255, 255, 0);
 
-const char* hotspotSsid = "ESP8266";
-
-WiFiManager::WiFiManager(int successPin, int loadingPin)
-  : _server(80), _successPin(successPin), _loadingPin(loadingPin) {
+WiFiManager::WiFiManager(int successPin, int loadingPin, String hotspotSsid)
+  : _server(80), _successPin(successPin), _loadingPin(loadingPin), _hotspotSsid(hotspotSsid) {
 }
 
 void WiFiManager::begin() {
@@ -21,7 +19,7 @@ void WiFiManager::begin() {
 
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(local_IP, gateway, subnet);
-  WiFi.softAP(hotspotSsid);
+  WiFi.softAP(_hotspotSsid);
 
   _server.on("/",        [this]() { handleIndex(); });
   _server.on("/connect", [this]() { handleConnect(); });
@@ -65,6 +63,7 @@ void WiFiManager::handleConnect() {
   WiFi.begin(ssid, password);
   for (int i = 0; i < 20; i++) {
     if (WiFi.status() == WL_CONNECTED) {
+      WiFi.mode(WIFI_STA);
       break;
     }
 
@@ -78,10 +77,6 @@ void WiFiManager::handleConnect() {
   if (WiFi.status() == WL_CONNECTED) {
     digitalWrite(_loadingPin, HIGH);
     digitalWrite(_successPin, LOW);
-
-    // switch to station mode after connecting to a local network
-    // not allow other people to  access this device and add to a new room until being reset
-    // WiFi.mode(WIFI_STA); , allow to send sccuess message
   } else {
     digitalWrite(_loadingPin, LOW);
     digitalWrite(_successPin, HIGH);

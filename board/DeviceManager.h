@@ -3,6 +3,7 @@
 
 #include "Event.h"
 #include <Arduino.h>
+#include "DHT.h"
 
 enum DeviceType {
   LightSensor,
@@ -27,6 +28,7 @@ class DeviceManager {
     int _outputPin;
     DeviceType _type;
     unsigned long _lastTelemetry = 0;
+    DHT _dht;
 };
 
 #endif
