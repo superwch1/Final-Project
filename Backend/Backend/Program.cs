@@ -1,5 +1,7 @@
 using Backend;
 using Backend.Connections;
+using Backend.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,11 @@ builder.Services.AddSingleton<ConnectionMediator>();
 builder.Services.AddSingleton<DeviceConnections>();
 builder.Services.AddSingleton<DashboardConnections>();
 builder.Services.AddSingleton<DeviceStore>();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
