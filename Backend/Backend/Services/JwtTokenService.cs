@@ -35,7 +35,9 @@ namespace Backend.Services
                 SigningCredentials = _signingCredentials,
                 Claims = new Dictionary<string, object>
                 {
-                    [JwtRegisteredClaimNames.Sub] = account.Id.ToString()
+                    [JwtRegisteredClaimNames.Sub] = account.Id.ToString(),
+                    [JwtRegisteredClaimNames.Email] = account.Email,
+                    [JwtRegisteredClaimNames.Name] = account.Name
                 }
             };
 
