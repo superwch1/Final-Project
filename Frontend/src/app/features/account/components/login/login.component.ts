@@ -6,11 +6,11 @@ import { AccountApiService } from '../../services/account-api.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink],
-  templateUrl: './register.component.html'
+  templateUrl: './login.component.html'
 })
-export class RegisterComponent {
+export class LoginComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly accountApiService = inject(AccountApiService);
   private readonly authService = inject(AuthService);
@@ -20,11 +20,8 @@ export class RegisterComponent {
   protected readonly errorMessage = signal<string | null>(null);
 
   protected readonly form = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-
-    // requires at least one digit and one non-alphanumeric character.
-    password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[0-9])(?=.*[^A-Za-z0-9]).*$/)]]
+    password: ['', [Validators.required]]
   });
 
   protected submit(): void {
@@ -36,19 +33,18 @@ export class RegisterComponent {
     this.errorMessage.set(null);
 
     const request = {
-      name: this.form.controls.name.value,
       email: this.form.controls.email.value,
       password: this.form.controls.password.value
     };
 
-    this.accountApiService.CreateAccount(request).subscribe({
+    this.accountApiService.Login(request).subscribe({
       next: (response) => {
         this.authService.setToken(response.accessToken);
         this.router.navigate(['/home']);
       },
       error: (error: HttpErrorResponse) => {
         this.isSubmitting.set(false);
-        this.errorMessage.set(typeof error.error === 'string' ? error.error : 'Could not create the account.');
+        this.errorMessage.set(typeof error.error === 'string' ? error.error : 'Could not sign in.');
       }
     });
   }

@@ -1,14 +1,6 @@
 <div class="page page-centered">
   <form class="card" [formGroup]="form" (ngSubmit)="submit()">
-    <h1 class="title mb-6">Create account</h1>
-
-    <label class="field">
-      <span class="field-label">Name</span>
-      <input class="field-input" type="text" formControlName="name" autocomplete="name" />
-      @if (form.controls.name.touched && form.controls.name.invalid) {
-        <span class="field-error">Enter your name.</span>
-      }
-    </label>
+    <h1 class="title mb-6">Sign in</h1>
 
     <label class="field">
       <span class="field-label">Email</span>
@@ -20,9 +12,9 @@
 
     <label class="field">
       <span class="field-label">Password</span>
-      <input class="field-input" type="password" formControlName="password" autocomplete="new-password" />
+      <input class="field-input" type="password" formControlName="password" autocomplete="current-password" />
       @if (form.controls.password.touched && form.controls.password.invalid) {
-        <span class="field-error">Use at least 8 characters, including a number and a symbol.</span>
+        <span class="field-error">Enter your password.</span>
       }
     </label>
 
@@ -31,9 +23,9 @@
     }
 
     <button class="button-primary w-full" type="submit" [disabled]="form.invalid || isSubmitting()">
-      {{ isSubmitting() ? 'Creating…' : 'Create account' }}
+      {{ isSubmitting() ? 'Signing in…' : 'Sign in' }}
     </button>
 
-    <p class="subtitle mt-4">Already registered? <a class="underline" routerLink="/login">Sign in</a></p>
+    <p class="subtitle mt-4">No account yet? <a class="underline" routerLink="/register">Create one</a></p>
   </form>
 </div>

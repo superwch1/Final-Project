@@ -9,7 +9,10 @@
       @if (isSignedIn()) {
         <button class="button-secondary" type="button" (click)="signOut()">Sign out</button>
       } @else {
-        <a class="button-primary" routerLink="/register">Register</a>
+        <div class="flex gap-2">
+          <a class="button-secondary" routerLink="/login">Sign in</a>
+          <a class="button-primary" routerLink="/register">Register</a>
+        </div>
       }
     </header>
 
