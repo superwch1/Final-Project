@@ -11,8 +11,9 @@ namespace Backend.Models
         [MaxLength(128)]
         public string? Name { get; init; }
 
-        [MinLength(8)]
-        [MaxLength(128)]
+        [MinLength(PasswordRules.MinimumLength, ErrorMessage = PasswordRules.Message)]
+        [MaxLength(PasswordRules.MaximumLength)]
+        [RegularExpression(PasswordRules.Pattern, ErrorMessage = PasswordRules.Message)]
         public string? NewPassword { get; init; }
     }
 }

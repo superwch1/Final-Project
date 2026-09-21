@@ -1,9 +1,20 @@
-<div class="min-h-screen bg-slate-50 px-4 py-10 dark:bg-slate-900">
-  <div class="mx-auto max-w-3xl">
-    <a
-      routerLink="/room"
-      class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-      Go to the room dashboard
-    </a>
+<div class="page">
+  <div class="container-narrow">
+    <header class="row-between mb-8">
+      <div>
+        <p class="subtitle">Smart Room</p>
+        <h1 class="title">Welcome{{ name() ? ', ' + name() : '' }}</h1>
+      </div>
+
+      @if (isSignedIn()) {
+        <button class="button-secondary" type="button" (click)="signOut()">Sign out</button>
+      } @else {
+        <a class="button-primary" routerLink="/register">Register</a>
+      }
+    </header>
+
+    @if (isSignedIn()) {
+      <a class="button-primary" routerLink="/room">Go to the room dashboard</a>
+    }
   </div>
 </div>

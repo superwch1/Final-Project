@@ -1,7 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-
-const TokenStorageKey = 'accessToken';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -9,5 +8,17 @@ const TokenStorageKey = 'accessToken';
   templateUrl: './home.component.html'
 })
 export class HomeComponent {
+  private readonly authService = inject(AuthService);
 
+  protected isSignedIn(): boolean {
+    return this.authService.isSignedIn();
+  }
+
+  protected name(): string | null {
+    return this.authService.name();
+  }
+
+  protected signOut(): void {
+    this.authService.signOut();
+  }
 }

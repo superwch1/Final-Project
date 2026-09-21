@@ -11,8 +11,9 @@ namespace Backend.Models
         [MaxLength(256)]
         public required string Email { get; init; }
 
-        [MinLength(8)]
-        [MaxLength(128)]
+        [MinLength(PasswordRules.MinimumLength, ErrorMessage = PasswordRules.Message)]
+        [MaxLength(PasswordRules.MaximumLength)]
+        [RegularExpression(PasswordRules.Pattern, ErrorMessage = PasswordRules.Message)]
         public required string Password { get; init; }
 
         [MinLength(1)]
