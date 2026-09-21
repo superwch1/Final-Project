@@ -25,6 +25,15 @@ namespace Backend.Repositories
         }
 
         /// <summary>
+        /// Find an account by email.
+        /// </summary>
+        public Task<Account?> FindByEmailAsync(string email, CancellationToken cancellationToken)
+        {
+            return _dbContext.Accounts
+                .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+        }
+
+        /// <summary>
         /// Check whether an account with the email exists.
         /// </summary>
         public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken)

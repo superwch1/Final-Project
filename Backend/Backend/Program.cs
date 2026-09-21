@@ -1,8 +1,10 @@
 using Backend;
-using Backend.Authentication;
 using Backend.Connections;
+using Backend.Models;
 using Backend.Repositories;
+using Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -27,6 +29,7 @@ builder.Services
     .AddOptions<JwtOptions>()
     .Bind(builder.Configuration.GetSection(JwtOptions.SectionName));
 
+builder.Services.AddSingleton<IPasswordHasher<Account>, PasswordHasher<Account>>();
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
 

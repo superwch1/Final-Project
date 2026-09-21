@@ -1,6 +1,6 @@
 using Backend.Models;
 
-namespace Backend.Authentication
+namespace Backend.Services
 {
     /// <summary>
     /// Issues access tokens for accounts.

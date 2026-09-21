@@ -1,4 +1,4 @@
-namespace Backend.Authentication
+namespace Backend.Models
 {
     /// <summary>
     /// Signing and validation settings for the access tokens.

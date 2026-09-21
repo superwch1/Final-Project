@@ -17,8 +17,6 @@ namespace Backend.Models
         [MaxLength(128)]
         public required string Name { get; set; }
 
-        public DateTimeOffset LastSeen { get; set; }
-
         public required int FailedAttemptCount { get; set; }
 
         public DateTimeOffset? LastFailedAttemptUtc { get; set; }

@@ -13,6 +13,11 @@ namespace Backend.Repositories
         Task<Account?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
 
         /// <summary>
+        /// Find an account by email.
+        /// </summary>
+        Task<Account?> FindByEmailAsync(string email, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Check whether an account with the email exists.
         /// </summary>
         Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);

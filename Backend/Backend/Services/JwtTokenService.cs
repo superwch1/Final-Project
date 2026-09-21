@@ -4,7 +4,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace Backend.Authentication
+namespace Backend.Services
 {
     /// <summary>
     /// Issues access tokens for accounts.
