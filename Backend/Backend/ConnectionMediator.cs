@@ -33,7 +33,7 @@ namespace Backend
         public async Task DeviceEcho(WebSocket webSocket, string macAddress, DeviceType deviceType, CancellationToken cancellationToken)
         {
             // send the unix time to teh board
-            List<string> initialMessages = [$"{{\"serverTime\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}"];
+            List<string> initialMessages = [DeviceConnections.ServerTimeMessage()];
 
             // send the state to the actuator
             if (deviceType.IsActuator())

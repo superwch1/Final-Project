@@ -18,6 +18,7 @@ builder.Services.AddSingleton<ConnectionMediator>();
 builder.Services.AddSingleton<DeviceConnections>();
 builder.Services.AddSingleton<DashboardConnections>();
 builder.Services.AddSingleton<DeviceStore>();
+builder.Services.AddHostedService<ServerTimeSync>();
 
 // Devices sign their telemetry with a key derived from this master key.
 builder.Services

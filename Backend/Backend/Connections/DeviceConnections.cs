@@ -52,6 +52,22 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// The clock message a board syncs from.
+        /// </summary>
+        public static string ServerTimeMessage()
+        {
+            return $"{{\"serverTime\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}";
+        }
+
+        /// <summary>
+        /// Resend the clock to every connected device.
+        /// </summary>
+        public Task BroadcastServerTime(CancellationToken cancellationToken)
+        {
+            return SendMessageToAllAsync(ServerTimeMessage(), cancellationToken);
+        }
+
         public void SubscribeToTelemetryReceived(Func<(string MacAddress, BaseTelemetry Telemetry), Task> eventHandler)
             => _telemetryReceived += eventHandler;
 

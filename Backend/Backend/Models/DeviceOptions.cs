@@ -16,5 +16,10 @@ namespace Backend.Models
         /// How far a device clock can differ from the server.
         /// </summary>
         public required TimeSpan MaxClockSkew { get; set; }
+
+        /// <summary>
+        /// How often the server resends its clock.
+        /// </summary>
+        public required TimeSpan ClockSyncInterval { get; set; }
     }
 }
