@@ -19,6 +19,11 @@ builder.Services.AddSingleton<DeviceConnections>();
 builder.Services.AddSingleton<DashboardConnections>();
 builder.Services.AddSingleton<DeviceStore>();
 
+// Devices sign their telemetry with a key derived from this master key.
+builder.Services
+    .AddOptions<DeviceOptions>()
+    .Bind(builder.Configuration.GetSection(DeviceOptions.SectionName));
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 

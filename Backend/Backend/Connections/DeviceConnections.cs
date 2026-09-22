@@ -1,7 +1,11 @@
-﻿using Backend.Enumerations;
+using Backend.Enumerations;
 using Backend.Models;
+using Backend.Services;
+using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace Backend.Connections
@@ -11,6 +15,14 @@ namespace Backend.Connections
         private readonly ConcurrentDictionary<Guid, DeviceType> _deviceTypeByConnectionId = new();
         private readonly ConcurrentDictionary<Guid, string> _macAddressByConnectionId = new();
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<Guid, object?>> _connectionIdsByMacAddress = new();
+        private readonly ConcurrentDictionary<Guid, long> _lastTimestampByConnectionId = new();
+
+        private readonly DeviceOptions _options;
+
+        public DeviceConnections(IOptions<DeviceOptions> options)
+        {
+            _options = options.Value;
+        }
 
         private event Func<(string MacAddress, BaseTelemetry Telemetry), Task>? _telemetryReceived;
 
@@ -45,43 +57,76 @@ namespace Backend.Connections
 
         protected override async Task OnMessageReceived(Guid connectionId, string message)
         {
-            if (_deviceTypeByConnectionId.TryGetValue(connectionId, out DeviceType deviceType) &&
-                _macAddressByConnectionId.TryGetValue(connectionId, out string? macAddress) && macAddress != null)
+            if (!_deviceTypeByConnectionId.TryGetValue(connectionId, out DeviceType deviceType) ||
+                !_macAddressByConnectionId.TryGetValue(connectionId, out string? macAddress) || macAddress == null)
             {
-                try
+                return;
+            }
+
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(message);
+                JsonElement root = document.RootElement;
+
+                long timestamp = root.GetProperty("timestamp").GetInt64();
+                string signature = root.GetProperty("signature").GetString() ?? "";
+                JsonElement data = root.GetProperty("data");
+
+                // check is the message valid
+                long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                bool hasValidTimestamp = Math.Abs(now - timestamp) <= (long)_options.MaxClockSkew.TotalMilliseconds;
+
+                byte[] key = Encoding.UTF8.GetBytes(DeviceKey.Derive(_options.MasterKey, macAddress));
+                string signed = $"{DeviceKey.NormalizeMacAddress(macAddress)}|{deviceType}|{timestamp}|{data}";
+
+                byte[] received = Convert.FromHexString(signature);
+                byte[] expected = HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(signed));
+
+                bool hasValidSignature = CryptographicOperations.FixedTimeEquals(expected, received);
+
+                if(!hasValidTimestamp || !hasValidSignature)
                 {
-                    BaseTelemetry? telemetry = null;
-                    JsonSerializerOptions options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
-                    switch (deviceType)
-                    {
-                        case DeviceType.TempAndHumidSensor:
-                            telemetry = JsonSerializer.Deserialize<TempAndHumidTelemetry>(message, options);
-                            break;
-
-                        case DeviceType.LightSensor:
-                            telemetry = JsonSerializer.Deserialize<LightTelemetry>(message, options);
-                            break;
-
-                        case DeviceType.FanActuator:
-                            telemetry = JsonSerializer.Deserialize<FanTelemetry>(message, options);
-                            break;
-
-                        case DeviceType.LedActuator:
-                            telemetry = JsonSerializer.Deserialize<LedTelemetry>(message, options);
-                            break;
-                    }
-
-                    if (_telemetryReceived != null && telemetry != null)
-                    {
-                        await _telemetryReceived.Invoke((macAddress, telemetry));
-                    }
-                        
+                    return;
                 }
-                catch
+
+                // does not accept previous accepted timestamp
+                if (_lastTimestampByConnectionId.GetOrAdd(connectionId, 0) >= timestamp)
                 {
+                    return;
+                }
+
+                _lastTimestampByConnectionId[connectionId] = timestamp;
+
+                BaseTelemetry? telemetry = null;
+                JsonSerializerOptions options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+                switch (deviceType)
+                {
+                    case DeviceType.TempAndHumidSensor:
+                        telemetry = data.Deserialize<TempAndHumidTelemetry>(options);
+                        break;
+
+                    case DeviceType.LightSensor:
+                        telemetry = data.Deserialize<LightTelemetry>(options);
+                        break;
+
+                    case DeviceType.FanActuator:
+                        telemetry = data.Deserialize<FanTelemetry>(options);
+                        break;
+
+                    case DeviceType.LedActuator:
+                        telemetry = data.Deserialize<LedTelemetry>(options);
+                        break;
+                }
+
+                if (_telemetryReceived != null && telemetry != null)
+                {
+                    await _telemetryReceived.Invoke((macAddress, telemetry));
+                }
+            }
+            catch
+            {
                     // De-serialization failed
-                }
             }
         }
 
@@ -98,6 +143,7 @@ namespace Backend.Connections
         {
             _deviceTypeByConnectionId.TryRemove(connectionId, out _);
             _macAddressByConnectionId.TryRemove(connectionId, out _);
+            _lastTimestampByConnectionId.TryRemove(connectionId, out _);
 
             if (_connectionIdsByMacAddress.TryGetValue(macAddress, out ConcurrentDictionary<Guid, object?>? connectionIds) && connectionIds != null)
             {

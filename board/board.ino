@@ -1,7 +1,9 @@
 #include "WiFiManager.h"
 #include "DeviceManager.h"
 #include "WebSocketClient.h"
+#include "MessageSigner.h"
 
+#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 
@@ -20,8 +22,16 @@ const int port = 5000;
 const String path = "/device/ws?macAddress=" + WiFi.macAddress() + "&deviceType=" + deviceManager.getType();
 WebSocketClient webSocketClient(host, port, path);
 
+// Generated per board by the DeviceKeyTool
+const String DeviceKey = "";
+MessageSigner messageSigner(DeviceKey);
+
 void setup() {
   Serial.begin(115200);
+
+  Serial.println();
+  Serial.print("MAC address: ");
+  Serial.println(WiFi.macAddress());
 
   // wait until the ESP8266 connected to WiFi
   wifiManager.begin();
@@ -31,11 +41,27 @@ void setup() {
 
   webSocketClient.begin();
   webSocketClient.onMessageReceived.subscribe([](String message){
+    // sync the clock with server
+    if (message.startsWith("{")) {
+      JsonDocument doc;
+
+      if (deserializeJson(doc, message) == DeserializationError::Ok && doc["serverTime"].is<uint64_t>()) {
+        messageSigner.syncTime(doc["serverTime"].as<uint64_t>());
+        Serial.println("Clock synced with the server");
+      }
+
+      return;
+    }
+
     deviceManager.processMessage(message);
   });
-  
+
   deviceManager.onTelemetrySent.subscribe([](String telemetry) {
-    webSocketClient.sendMessage(telemetry);
+    if (!messageSigner.isSynced()) {
+      return;
+    }
+
+    webSocketClient.sendMessage(messageSigner.signMessage(WiFi.macAddress(), deviceManager.getType(), telemetry));
   });
 }
 

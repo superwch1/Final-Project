@@ -1,4 +1,4 @@
-﻿using Backend.Connections;
+using Backend.Connections;
 using Backend.Enumerations;
 using Backend.Models;
 using System.Net.WebSockets;
@@ -32,11 +32,13 @@ namespace Backend
 
         public async Task DeviceEcho(WebSocket webSocket, string macAddress, DeviceType deviceType, CancellationToken cancellationToken)
         {
-            ActuatorState? actuatorState = null;
-            if (deviceType.IsActuator())
-                actuatorState = _deviceStore.GetActuatorState(macAddress);
+            // send the unix time to teh board
+            List<string> initialMessages = [$"{{\"serverTime\":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}"];
 
-            List<string> initialMessages = actuatorState is null ? [] : [ actuatorState.ToString()! ];
+            // send the state to the actuator
+            if (deviceType.IsActuator())
+                initialMessages.Add(_deviceStore.GetActuatorState(macAddress).ToString());
+
             await _deviceConnections.DeviceEcho(webSocket, macAddress, deviceType, initialMessages, cancellationToken);
         }
 
