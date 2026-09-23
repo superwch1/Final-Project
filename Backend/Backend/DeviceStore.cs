@@ -1,4 +1,4 @@
-﻿using Backend.Enumerations;
+using Backend.Enumerations;
 using Backend.Models;
 using System.Collections.Concurrent;
 
@@ -10,7 +10,32 @@ namespace Backend
 
         private readonly ConcurrentDictionary<string, ActuatorState> _actuatorStateByMacAddress = new();
         private readonly ConcurrentDictionary<string, BaseTelemetry> _telemetryByMacAddress = new();
+        private readonly ConcurrentDictionary<string, Guid> _ownerByMacAddress = new();
 
+
+        /// <summary>
+        /// The cached owner of a device.
+        /// </summary>
+        public bool TryGetOwner(string macAddress, out Guid accountId)
+        {
+            return _ownerByMacAddress.TryGetValue(macAddress, out accountId);
+        }
+
+        /// <summary>
+        /// Set who owns a device. 
+        /// </summary>
+        public void SetOwner(string macAddress, Guid accountId)
+        {
+            _ownerByMacAddress[macAddress] = accountId;
+        }
+
+        /// <summary>
+        /// Forget the device owner.
+        /// </summary>
+        public void ForgetOwner(string macAddress)
+        {
+            _ownerByMacAddress.TryRemove(macAddress, out _);
+        }
 
         public IEnumerable<string> GetMacAddresses()
         {

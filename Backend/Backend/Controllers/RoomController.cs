@@ -14,11 +14,13 @@ namespace Backend.Controllers
     {
         private readonly IRoomRepository _roomRepository;
         private readonly IDeviceRepository _deviceRepository;
+        private readonly DeviceStore _deviceStore;
 
-        public RoomController(IRoomRepository roomRepository, IDeviceRepository deviceRepository)
+        public RoomController(IRoomRepository roomRepository, IDeviceRepository deviceRepository, DeviceStore deviceStore)
         {
             _roomRepository = roomRepository;
             _deviceRepository = deviceRepository;
+            _deviceStore = deviceStore;
         }
 
 
@@ -96,6 +98,11 @@ namespace Backend.Controllers
                 return NotFound();
             }
 
+            foreach (Device device in room.Devices)
+            {
+                _deviceStore.ForgetOwner(device.MacAddress);
+            }
+
             await _roomRepository.DeleteAsync(room, cancellationToken);
 
             return NoContent();
@@ -132,6 +139,8 @@ namespace Backend.Controllers
                 return Conflict("That device is already paired.");
             }
 
+            _deviceStore.SetOwner(macAddress, room.AccountId);
+
             return Ok(DeviceResponse.FromDevice(device));
         }
 
@@ -155,6 +164,7 @@ namespace Backend.Controllers
             }
 
             await _deviceRepository.DeleteAsync(device, cancellationToken);
+            _deviceStore.ForgetOwner(device.MacAddress);
 
             return NoContent();
         }

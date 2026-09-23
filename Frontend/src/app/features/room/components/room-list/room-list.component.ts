@@ -1,9 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ActuatorState } from '../../../dashboard/enumerations/actuator-state.enum';
+import { DeviceType } from '../../../dashboard/enumerations/device-type.enum';
+import { BaseTelemetry } from '../../../dashboard/models/telemetry/base-telemetry.interface';
+import { LedTelemetry } from '../../../dashboard/models/telemetry/led-telemetry.interface';
+import { LightTelemetry } from '../../../dashboard/models/telemetry/light-telemetry.interface';
+import { TempAndHumidTelemetry } from '../../../dashboard/models/telemetry/temp-and-humid-telemetry.interface';
+import { DeviceApiService } from '../../../dashboard/services/device-api.service';
 import { RoomResponse } from '../../models/room-response.interface';
 import { RoomApiService } from '../../services/room-api.service';
+import { TelemetryService } from '../../services/telemetry.service';
 
 const MacAddressPattern = /^\s*(?:[0-9A-Fa-f]{2}[:-]?){5}[0-9A-Fa-f]{2}\s*$/;
 const MaxNameLength = 128;
@@ -13,9 +21,14 @@ const MaxNameLength = 128;
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './room-list.component.html'
 })
-export class RoomListComponent implements OnInit {
+export class RoomListComponent implements OnInit, OnDestroy {
   private readonly roomApiService = inject(RoomApiService);
+  private readonly deviceApiService = inject(DeviceApiService);
+  private readonly telemetryService = inject(TelemetryService);
   private readonly formBuilder = inject(FormBuilder);
+
+  protected readonly telemetry = this.telemetryService.telemetry;
+  protected readonly ActuatorState = ActuatorState;
   private readonly deviceForms = new Map<string, FormGroup>();
 
   protected readonly rooms = signal<RoomResponse[]>([]);
@@ -28,6 +41,49 @@ export class RoomListComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.telemetryService.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.telemetryService.disconnect();
+  }
+
+  /** Groups a stored MAC into pairs for display: 98CDAC261D12 -> 98:CD:AC:26:1D:12 */
+  protected formatMacAddress(macAddress: string): string {
+    return macAddress.match(/.{1,2}/g)?.join(':') ?? macAddress;
+  }
+
+  protected telemetryFor(macAddress: string): BaseTelemetry | undefined {
+    return this.telemetry()[TelemetryService.normalizeMacAddress(macAddress)];
+  }
+
+  protected isActuator(telemetry: BaseTelemetry): boolean {
+    return (telemetry.deviceType === DeviceType.LedActuator) || (telemetry.deviceType === DeviceType.FanActuator);
+  }
+
+  protected actuatorState(telemetry: BaseTelemetry): ActuatorState {
+    return (telemetry as LedTelemetry).actuatorState;
+  }
+
+  protected reading(telemetry: BaseTelemetry): string {
+    if (telemetry.deviceType === DeviceType.TempAndHumidSensor) {
+      const sensor = telemetry as TempAndHumidTelemetry;
+      return `${sensor.temperatureReading} °C, ${sensor.humidityReading} % humidity`;
+    }
+
+    if (telemetry.deviceType === DeviceType.LightSensor) {
+      return `${(telemetry as LightTelemetry).lightReading} % light`;
+    }
+
+    return telemetry.deviceType;
+  }
+
+  protected toggleActuator(macAddress: string, telemetry: BaseTelemetry): void {
+    const actuatorState = (this.actuatorState(telemetry) === ActuatorState.On) ? ActuatorState.Off : ActuatorState.On;
+
+    this.deviceApiService.SetActuatorState({ macAddress, actuatorState }).subscribe({
+      error: (error: HttpErrorResponse) => this.showError(error, 'Could not switch the device.')
+    });
   }
 
   protected deviceFormFor(roomId: string): FormGroup {
@@ -116,7 +172,7 @@ export class RoomListComponent implements OnInit {
   }
 
   protected unpairDevice(roomId: string, macAddress: string): void {
-    if (!confirm(`Unpair ${macAddress}?`)) {
+    if (!confirm(`Unpair ${this.formatMacAddress(macAddress)}?`)) {
       return;
     }
 

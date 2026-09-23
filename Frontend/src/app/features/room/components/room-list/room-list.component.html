@@ -52,15 +52,31 @@
         } @else {
           <ul class="mb-4 divide-y divide-slate-200">
             @for (device of room.devices; track device.macAddress) {
-              <li class="flex items-center justify-between gap-4 py-2">
+              @let telemetry = telemetryFor(device.macAddress);
+
+              <li class="flex flex-wrap items-center justify-between gap-4 py-3">
                 <span>
                   {{ device.name }}
-                  <span class="subtitle">{{ device.macAddress }}</span>
+                  <span class="subtitle">{{ formatMacAddress(device.macAddress) }}</span>
                 </span>
 
-                <button class="button-secondary" type="button" (click)="unpairDevice(room.id, device.macAddress)">
-                  Unpair
-                </button>
+                <span class="flex items-center gap-2">
+                  @if (telemetry === undefined) {
+                    <span class="subtitle">Waiting for the device…</span>
+                  } @else if (isActuator(telemetry)) {
+                    <span class="subtitle">{{ actuatorState(telemetry) }}</span>
+
+                    <button class="button-primary" type="button" (click)="toggleActuator(device.macAddress, telemetry)">
+                      Switch {{ actuatorState(telemetry) === ActuatorState.On ? 'off' : 'on' }}
+                    </button>
+                  } @else {
+                    <span class="font-medium">{{ reading(telemetry) }}</span>
+                  }
+
+                  <button class="button-secondary" type="button" (click)="unpairDevice(room.id, device.macAddress)">
+                    Unpair
+                  </button>
+                </span>
               </li>
             }
           </ul>
