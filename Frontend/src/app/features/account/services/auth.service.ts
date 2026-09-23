@@ -9,6 +9,10 @@ import { TokenStorageKey } from "../token-storage";
 export class AuthService {
     private readonly payload = signal<AccessTokenPayload | null>(AuthService.readPayload());
 
+    public getToken(): string | null {
+        return localStorage.getItem(TokenStorageKey);
+    }
+
     public isSignedIn(): boolean {
         // check whether the stored token is still valid
         const expiresAt = this.payload()?.exp ?? 0;

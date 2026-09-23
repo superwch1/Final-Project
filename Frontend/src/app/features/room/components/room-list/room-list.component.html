@@ -1,0 +1,77 @@
+<div class="page">
+  <div class="container-narrow">
+    <header class="row-between mb-8">
+      <div>
+        <p class="subtitle">Smart Room</p>
+        <h1 class="title">My rooms</h1>
+      </div>
+
+      <a class="button-secondary" routerLink="/home">Home</a>
+    </header>
+
+    @if (errorMessage(); as message) {
+      <p class="alert-error">{{ message }}</p>
+    }
+
+    <form class="mb-8 flex flex-wrap items-end gap-2" [formGroup]="roomForm" (ngSubmit)="createRoom()">
+      <label class="field mb-0 grow">
+        <span class="field-label">New room</span>
+        <input class="field-input" type="text" formControlName="name" placeholder="Living room" />
+      </label>
+
+      <button class="button-primary" type="submit" [disabled]="roomForm.invalid">Create</button>
+    </form>
+
+    @if (isLoading()) {
+      <p class="subtitle">Loading…</p>
+    } @else if (rooms().length === 0) {
+      <p class="subtitle">No rooms yet.</p>
+    }
+
+    @for (room of rooms(); track room.id) {
+      <section class="card mb-4 max-w-none">
+        <header class="row-between mb-4">
+          <h2 class="text-lg font-semibold">{{ room.name }}</h2>
+
+          <div class="flex gap-2">
+            <button class="button-secondary" type="button" (click)="renameRoom(room)">Rename</button>
+            <button class="button-secondary" type="button" (click)="deleteRoom(room)">Delete</button>
+          </div>
+        </header>
+
+        @if (room.devices.length === 0) {
+          <p class="subtitle mb-4">No devices paired.</p>
+        } @else {
+          <ul class="mb-4 divide-y divide-slate-200">
+            @for (device of room.devices; track device.macAddress) {
+              <li class="flex items-center justify-between gap-4 py-2">
+                <span>
+                  {{ device.name }}
+                  <span class="subtitle">{{ device.macAddress }}</span>
+                </span>
+
+                <button class="button-secondary" type="button" (click)="unpairDevice(room.id, device.macAddress)">
+                  Unpair
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <form class="flex flex-wrap items-end gap-2" [formGroup]="deviceFormFor(room.id)" (ngSubmit)="pairDevice(room.id)">
+          <label class="field mb-0 grow">
+            <span class="field-label">MAC address</span>
+            <input class="field-input" type="text" formControlName="macAddress" placeholder="5C:CF:7F:11:22:33" />
+          </label>
+
+          <label class="field mb-0 grow">
+            <span class="field-label">Device name</span>
+            <input class="field-input" type="text" formControlName="name" placeholder="Temperature sensor" />
+          </label>
+
+          <button class="button-primary" type="submit" [disabled]="deviceFormFor(room.id).invalid">Pair</button>
+        </form>
+      </section>
+    }
+  </div>
+</div>
