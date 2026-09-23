@@ -5,6 +5,9 @@ import { RouterLink } from '@angular/router';
 import { RoomResponse } from '../../models/room-response.interface';
 import { RoomApiService } from '../../services/room-api.service';
 
+const MacAddressPattern = /^\s*(?:[0-9A-Fa-f]{2}[:-]?){5}[0-9A-Fa-f]{2}\s*$/;
+const MaxNameLength = 128;
+
 @Component({
   selector: 'app-room-list',
   imports: [ReactiveFormsModule, RouterLink],
@@ -20,7 +23,7 @@ export class RoomListComponent implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
 
   protected readonly roomForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required]]
+    name: ['', [Validators.required, Validators.maxLength(MaxNameLength)]]
   });
 
   ngOnInit(): void {
@@ -32,8 +35,8 @@ export class RoomListComponent implements OnInit {
 
     if (form === undefined) {
       form = this.formBuilder.nonNullable.group({
-        macAddress: ['', [Validators.required]],
-        name: ['', [Validators.required]]
+        macAddress: ['', [Validators.required, Validators.pattern(MacAddressPattern)]],
+        name: ['', [Validators.required, Validators.maxLength(MaxNameLength)]]
       });
 
       this.deviceForms.set(roomId, form);
@@ -47,7 +50,7 @@ export class RoomListComponent implements OnInit {
       return;
     }
 
-    this.roomApiService.CreateRoom({ name: this.roomForm.controls.name.value }).subscribe({
+    this.roomApiService.CreateRoom({ name: this.roomForm.controls.name.value.trim() }).subscribe({
       next: (room) => {
         this.rooms.update(rooms => [...rooms, room]);
         this.roomForm.reset();
@@ -96,8 +99,8 @@ export class RoomListComponent implements OnInit {
     }
 
     const request = {
-      macAddress: form.controls['macAddress'].value,
-      name: form.controls['name'].value
+      macAddress: form.controls['macAddress'].value.trim(),
+      name: form.controls['name'].value.trim()
     };
 
     this.roomApiService.PairDevice(roomId, request).subscribe({

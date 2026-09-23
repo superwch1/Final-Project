@@ -17,6 +17,14 @@
       <label class="field mb-0 grow">
         <span class="field-label">New room</span>
         <input class="field-input" type="text" formControlName="name" placeholder="Living room" />
+
+        @if (roomForm.controls.name.touched && roomForm.controls.name.invalid) {
+          @if (roomForm.controls.name.hasError('required')) {
+            <span class="field-error">Enter a room name.</span>
+          } @else {
+            <span class="field-error">At most 128 characters.</span>
+          }
+        }
       </label>
 
       <button class="button-primary" type="submit" [disabled]="roomForm.invalid">Create</button>
@@ -58,18 +66,36 @@
           </ul>
         }
 
-        <form class="flex flex-wrap items-end gap-2" [formGroup]="deviceFormFor(room.id)" (ngSubmit)="pairDevice(room.id)">
+        @let deviceForm = deviceFormFor(room.id);
+
+        <form class="flex flex-wrap items-end gap-2" [formGroup]="deviceForm" (ngSubmit)="pairDevice(room.id)">
           <label class="field mb-0 grow">
             <span class="field-label">MAC address</span>
             <input class="field-input" type="text" formControlName="macAddress" placeholder="5C:CF:7F:11:22:33" />
+
+            @if (deviceForm.controls['macAddress'].touched && deviceForm.controls['macAddress'].invalid) {
+              @if (deviceForm.controls['macAddress'].hasError('required')) {
+                <span class="field-error">Enter a MAC address.</span>
+              } @else {
+                <span class="field-error">Use 12 hex digits such as 5C:CF:7F:11:22:33.</span>
+              }
+            }
           </label>
 
           <label class="field mb-0 grow">
             <span class="field-label">Device name</span>
             <input class="field-input" type="text" formControlName="name" placeholder="Temperature sensor" />
+
+            @if (deviceForm.controls['name'].touched && deviceForm.controls['name'].invalid) {
+              @if (deviceForm.controls['name'].hasError('required')) {
+                <span class="field-error">Enter a device name.</span>
+              } @else {
+                <span class="field-error">At most 128 characters.</span>
+              }
+            }
           </label>
 
-          <button class="button-primary" type="submit" [disabled]="deviceFormFor(room.id).invalid">Pair</button>
+          <button class="button-primary" type="submit" [disabled]="deviceForm.invalid">Pair</button>
         </form>
       </section>
     }
