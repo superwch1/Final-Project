@@ -10,5 +10,9 @@ namespace Backend
         }
 
         public DbSet<Account> Accounts { get; set; }
+
+        public DbSet<Room> Rooms { get; set; }
+
+        public DbSet<Device> Devices { get; set; }
     }
 }

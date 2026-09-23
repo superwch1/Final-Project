@@ -29,6 +29,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 
 // Bind the "Jwt" section onto JwtOptions
 builder.Services
