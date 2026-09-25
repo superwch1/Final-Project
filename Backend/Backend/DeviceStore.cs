@@ -11,6 +11,52 @@ namespace Backend
         private readonly ConcurrentDictionary<string, ActuatorState> _actuatorStateByMacAddress = new();
         private readonly ConcurrentDictionary<string, BaseTelemetry> _telemetryByMacAddress = new();
         private readonly ConcurrentDictionary<string, Guid> _ownerByMacAddress = new();
+        private readonly ConcurrentDictionary<string, List<Policy>> _policiesBySensorMacAddress = new();
+
+        // Devices already known to the database.
+        private readonly ConcurrentDictionary<string, object?> _registeredMacAddresses = new();
+
+
+        /// <summary>
+        /// Whether this device has already been added to the database.
+        /// </summary>
+        public bool IsRegistered(string macAddress)
+        {
+            return _registeredMacAddresses.ContainsKey(macAddress);
+        }
+
+        /// <summary>
+        /// Record that the device is in the database.
+        /// </summary>
+        public void MarkRegistered(string macAddress)
+        {
+            _registeredMacAddresses.TryAdd(macAddress, null);
+        }
+
+
+        /// <summary>
+        /// The cached policies a sensor drives, if they have been looked up.
+        /// </summary>
+        public bool TryGetPolicies(string sensorMacAddress, out List<Policy>? policies)
+        {
+            return _policiesBySensorMacAddress.TryGetValue(sensorMacAddress, out policies);
+        }
+
+        /// <summary>
+        /// Remember the policies a sensor drives. An empty list is worth caching too.
+        /// </summary>
+        public void SetPolicies(string sensorMacAddress, List<Policy> policies)
+        {
+            _policiesBySensorMacAddress[sensorMacAddress] = policies;
+        }
+
+        /// <summary>
+        /// Drop a sensor's policies, so the next reading looks them up again.
+        /// </summary>
+        public void ForgetPolicies(string sensorMacAddress)
+        {
+            _policiesBySensorMacAddress.TryRemove(sensorMacAddress, out _);
+        }
 
 
         /// <summary>

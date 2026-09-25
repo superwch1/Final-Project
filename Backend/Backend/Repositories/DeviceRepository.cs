@@ -37,6 +37,12 @@ namespace Backend.Repositories
             return true;
         }
 
+        public async Task UpdateAsync(Device device, CancellationToken cancellationToken)
+        {
+            _dbContext.Devices.Update(device);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         public async Task DeleteAsync(Device device, CancellationToken cancellationToken)
         {
             _dbContext.Devices.Remove(device);

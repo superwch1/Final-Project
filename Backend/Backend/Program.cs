@@ -31,6 +31,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
+builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
 
 // Bind the "Jwt" section onto JwtOptions
 builder.Services

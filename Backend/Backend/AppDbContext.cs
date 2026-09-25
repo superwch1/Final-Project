@@ -14,5 +14,7 @@ namespace Backend
         public DbSet<Room> Rooms { get; set; }
 
         public DbSet<Device> Devices { get; set; }
+
+        public DbSet<Policy> Policies { get; set; }
     }
 }

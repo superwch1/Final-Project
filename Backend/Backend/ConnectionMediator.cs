@@ -74,8 +74,9 @@ namespace Backend
 
         private async Task OnTelemetryReceived((string MacAddress, BaseTelemetry Telemetry) eventArgs)
         {
-            bool hasChanged = _deviceStore.RecordTelemetry(eventArgs.MacAddress, eventArgs.Telemetry);
+            await RegisterDeviceAsync(eventArgs.MacAddress, eventArgs.Telemetry.DeviceType);
 
+            bool hasChanged = _deviceStore.RecordTelemetry(eventArgs.MacAddress, eventArgs.Telemetry);
             if (!hasChanged || !TrySerializeTelemetry(eventArgs.Telemetry, out string? message) || message == null)
             {
                 return;
@@ -89,6 +90,111 @@ namespace Backend
             }
 
             await _dashboardConnections.NotifyTelemetryChanged(message, accountId.Value, CancellationToken.None);
+            await ApplyPoliciesAsync(eventArgs.MacAddress, eventArgs.Telemetry);
+        }
+
+        /// <summary>
+        /// Switch the actuators this sensor drives.
+        /// </summary>
+        private async Task ApplyPoliciesAsync(string sensorMacAddress, BaseTelemetry telemetry)
+        {
+            foreach (Policy policy in await FindPoliciesAsync(sensorMacAddress))
+            {
+                // A disabled policy means the user is driving that actuator manually
+                if (!policy.IsEnabled)
+                {
+                    continue;
+                }
+
+                double? reading = ReadValue(telemetry, policy.Reading);
+
+                if (reading is null)
+                {
+                    continue;
+                }
+
+                bool isConditionMet = (policy.Comparison == Comparison.Above)
+                    ? (reading.Value > policy.Threshold)
+                    : (reading.Value < policy.Threshold);
+
+                ActuatorState state = isConditionMet
+                    ? policy.ActuatorState
+                    : Opposite(policy.ActuatorState);
+
+                await SetActuatorState(policy.ActuatorMacAddress, state, CancellationToken.None);
+            }
+        }
+
+        private static ActuatorState Opposite(ActuatorState actuatorState)
+        {
+            return (actuatorState == ActuatorState.On) ? ActuatorState.Off : ActuatorState.On;
+        }
+
+        /// <summary>
+        /// The value a policy watches, or null when this telemetry does not carry it.
+        /// </summary>
+        private static double? ReadValue(BaseTelemetry telemetry, SensorReading reading)
+        {
+            return (telemetry, reading) switch
+            {
+                (TempAndHumidTelemetry sensor, SensorReading.Temperature) => sensor.TemperatureReading,
+                (TempAndHumidTelemetry sensor, SensorReading.Humidity) => sensor.HumidityReading,
+                (LightTelemetry sensor, SensorReading.Light) => sensor.LightReading,
+                _ => null
+            };
+        }
+
+        private async Task<List<Policy>> FindPoliciesAsync(string sensorMacAddress)
+        {
+            if (_deviceStore.TryGetPolicies(sensorMacAddress, out List<Policy>? cached) && cached is not null)
+            {
+                return cached;
+            }
+
+            using IServiceScope scope = _serviceScopeFactory.CreateScope();
+            IPolicyRepository policyRepository = scope.ServiceProvider.GetRequiredService<IPolicyRepository>();
+
+            List<Policy> policies = await policyRepository.FindBySensorAsync(sensorMacAddress, CancellationToken.None);
+
+            // Sensors with no policy are cached too, so they stop hitting the database.
+            _deviceStore.SetPolicies(sensorMacAddress, policies);
+
+            return policies;
+        }
+
+        /// <summary>
+        /// Add a device the first time it reports
+        /// </summary>
+        private async Task RegisterDeviceAsync(string macAddress, DeviceType deviceType)
+        {
+            if (_deviceStore.IsRegistered(macAddress))
+            {
+                return;
+            }
+
+            using IServiceScope scope = _serviceScopeFactory.CreateScope();
+            IDeviceRepository deviceRepository = scope.ServiceProvider.GetRequiredService<IDeviceRepository>();
+
+            Device? device = await deviceRepository.FindByMacAddressAsync(macAddress, CancellationToken.None);
+
+            if (device is null)
+            {
+                await deviceRepository.TryAddAsync(new Device
+                {
+                    MacAddress = macAddress,
+                    RoomId = null,
+                    Name = deviceType.ToString(),
+                    DeviceType = deviceType
+                }, CancellationToken.None);
+            }
+            else if (device.DeviceType != deviceType)
+            {
+                // The jumpers were changed and the board reports something new.
+                device.DeviceType = deviceType;
+                await deviceRepository.UpdateAsync(device, CancellationToken.None);
+            }
+
+            _deviceStore.MarkRegistered(macAddress);
         }
 
         /// <summary>
@@ -122,8 +228,13 @@ namespace Backend
                 return Guid.Empty;
             }
 
+            if (device.RoomId is null)
+            {
+                return Guid.Empty;
+            }
+
             IRoomRepository roomRepository = scope.ServiceProvider.GetRequiredService<IRoomRepository>();
-            Room? room = await roomRepository.FindByIdAsync(device.RoomId, CancellationToken.None);
+            Room? room = await roomRepository.FindByIdAsync(device.RoomId.Value, CancellationToken.None);
 
             return room?.AccountId ?? Guid.Empty;
         }

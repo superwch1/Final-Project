@@ -58,7 +58,12 @@ namespace Backend.Controllers
                 return NotFound();
             }
 
-            Room? room = await _roomRepository.FindByIdAsync(device.RoomId, cancellationToken);
+            if (device.RoomId is null)
+            {
+                return NotFound();
+            }
+
+            Room? room = await _roomRepository.FindByIdAsync(device.RoomId.Value, cancellationToken);
             if (room?.AccountId != accountId)
             {
                 return NotFound();

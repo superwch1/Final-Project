@@ -18,6 +18,11 @@ namespace Backend.Repositories
         Task<bool> TryAddAsync(Device device, CancellationToken cancellationToken);
 
         /// <summary>
+        /// Save changes to a device.
+        /// </summary>
+        Task UpdateAsync(Device device, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Unpair a device.
         /// </summary>
         Task DeleteAsync(Device device, CancellationToken cancellationToken);

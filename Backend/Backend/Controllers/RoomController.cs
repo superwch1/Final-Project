@@ -1,3 +1,4 @@
+using Backend.Enumerations;
 using Backend.Models;
 using Backend.Repositories;
 using Backend.Services;
@@ -14,12 +15,14 @@ namespace Backend.Controllers
     {
         private readonly IRoomRepository _roomRepository;
         private readonly IDeviceRepository _deviceRepository;
+        private readonly IPolicyRepository _policyRepository;
         private readonly DeviceStore _deviceStore;
 
-        public RoomController(IRoomRepository roomRepository, IDeviceRepository deviceRepository, DeviceStore deviceStore)
+        public RoomController(IRoomRepository roomRepository, IDeviceRepository deviceRepository, IPolicyRepository policyRepository, DeviceStore deviceStore)
         {
             _roomRepository = roomRepository;
             _deviceRepository = deviceRepository;
+            _policyRepository = policyRepository;
             _deviceStore = deviceStore;
         }
 
@@ -127,18 +130,21 @@ namespace Backend.Controllers
                 return BadRequest("That is not a MAC address.");
             }
 
-            Device device = new()
+            Device? device = await _deviceRepository.FindByMacAddressAsync(macAddress, cancellationToken);
+            if (device is null)
             {
-                MacAddress = macAddress,
-                RoomId = roomId,
-                Name = request.Name.Trim()
-            };
+                return NotFound("No device with that address has reported yet.");
+            }
 
-            if (!await _deviceRepository.TryAddAsync(device, cancellationToken))
+            if (device.RoomId is not null)
             {
                 return Conflict("That device is already paired.");
             }
 
+            device.RoomId = roomId;
+            device.Name = request.Name.Trim();
+
+            await _deviceRepository.UpdateAsync(device, cancellationToken);
             _deviceStore.SetOwner(macAddress, room.AccountId);
 
             return Ok(DeviceResponse.FromDevice(device));
@@ -163,8 +169,13 @@ namespace Backend.Controllers
                 return NotFound();
             }
 
-            await _deviceRepository.DeleteAsync(device, cancellationToken);
+            await _policyRepository.DeleteByDeviceAsync(device.MacAddress, cancellationToken);
+
+            device.RoomId = null;
+            await _deviceRepository.UpdateAsync(device, cancellationToken);
+
             _deviceStore.ForgetOwner(device.MacAddress);
+            _deviceStore.ForgetPolicies(device.MacAddress);
 
             return NoContent();
         }
