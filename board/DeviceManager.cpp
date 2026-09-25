@@ -81,9 +81,9 @@ void DeviceManager::loop() {
   if (_type == LedActuator || _type == FanActuator) {
     doc["actuatorState"] = digitalRead(_outputPin) == HIGH ? "On" : "Off";  
   }
-  else if (_type == LightSensor) {
-    Serial.println(analogRead(A0));
-    int lightReading = constrain(map(analogRead(A0), 0, 1023, 0, 100), 0, 100);
+  else if (_type == LightSensor) {.
+    int rawReading = analogRead(A0);
+    int lightReading = constrain(map(rawReading, 0, 1023, 100, 0), 0, 100);
     doc["lightReading"] = lightReading;
   }
   else if (_type == TempAndHumidSensor) {

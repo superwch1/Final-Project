@@ -1,10 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { RoomListComponent } from '../../../room/components/room-list/room-list.component';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [RouterLink, RoomListComponent],
   templateUrl: './home.component.html'
 })
 export class HomeComponent {

@@ -61,7 +61,19 @@ void setup() {
       return;
     }
 
-    webSocketClient.sendMessage(messageSigner.signMessage(WiFi.macAddress(), deviceManager.getType(), telemetry));
+    Serial.print("heap before sign: ");
+    Serial.println(ESP.getFreeHeap());
+
+    String message = messageSigner.signMessage(WiFi.macAddress(), deviceManager.getType(), telemetry);
+
+    Serial.print("signed, length ");
+    Serial.print(message.length());
+    Serial.print(", heap ");
+    Serial.println(ESP.getFreeHeap());
+
+    webSocketClient.sendMessage(message);
+
+    Serial.println("sent");
   });
 }
 

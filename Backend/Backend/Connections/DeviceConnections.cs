@@ -84,6 +84,9 @@ namespace Backend.Connections
                 using JsonDocument document = JsonDocument.Parse(message);
                 JsonElement root = document.RootElement;
 
+                Console.WriteLine($"Message - {macAddress}");
+                Console.WriteLine(JsonSerializer.Serialize(root, new JsonSerializerOptions() { WriteIndented = true }));
+
                 long timestamp = root.GetProperty("timestamp").GetInt64();
                 string signature = root.GetProperty("signature").GetString() ?? "";
                 JsonElement data = root.GetProperty("data");
@@ -142,7 +145,7 @@ namespace Backend.Connections
             }
             catch
             {
-                    // De-serialization failed
+                // De-serialization failed
             }
         }
 
