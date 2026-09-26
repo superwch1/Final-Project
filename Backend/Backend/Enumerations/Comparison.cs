@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Backend.Enumerations
 {
     /// <summary>
-    /// How a reading is compared against a policy's threshold.
+    /// How a policy compares a sensor reading against its threshold.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum Comparison

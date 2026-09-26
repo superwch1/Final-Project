@@ -23,6 +23,9 @@ namespace Backend.Connections
                 .TokenValidationParameters;
         }
 
+        /// <summary>
+        /// Runs a dashboard WebSocket connection until it closes, then forgets its signed-in account
+        /// </summary>
         public async Task DashboardEcho(WebSocket webSocket, CancellationToken cancellationToken)
         {
             Guid connectionId = Guid.NewGuid();
@@ -36,11 +39,14 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// Registers a handler that runs when a dashboard connection signs in
+        /// </summary>
         public void SubscribeToDashboardSignedIn(Func<(Guid ConnectionId, Guid AccountId), Task> eventHandler)
             => _dashboardSignedIn += eventHandler;
 
         /// <summary>
-        /// Send the account's devices to the dashboard.
+        /// Sends the initial set of messages to a single dashboard connection
         /// </summary>
         public async Task SendSnapshot(Guid connectionId, IEnumerable<string> messages, CancellationToken cancellationToken)
         {
@@ -51,7 +57,7 @@ namespace Backend.Connections
         }
 
         /// <summary>
-        /// Send telemetry only to the dashboards of the account that owns the device.
+        /// Sends a telemetry update to every dashboard connection signed in to the account
         /// </summary>
         public async Task NotifyTelemetryChanged(string message, Guid accountId, CancellationToken cancellationToken)
         {
@@ -66,6 +72,9 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// Treats the first message from a dashboard as a JWT and signs the connection in to that account
+        /// </summary>
         protected override async Task OnMessageReceived(Guid connectionId, string message)
         {
             if (_accountIdByConnectionId.ContainsKey(connectionId))
@@ -88,7 +97,7 @@ namespace Backend.Connections
         }
 
         /// <summary>
-        /// Validate the token and read the account.
+        /// Validates the JWT and returns its account ID, or null if the token is invalid
         /// </summary>
         private async Task<Guid?> ReadAccountIdAsync(string token)
         {

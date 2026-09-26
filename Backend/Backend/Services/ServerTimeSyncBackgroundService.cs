@@ -2,17 +2,14 @@ using Backend.Connections;
 using Backend.Models;
 using Microsoft.Extensions.Options;
 
-namespace Backend
+namespace Backend.Services
 {
-    /// <summary>
-    /// Resends the server clock to connected devices.
-    /// </summary>
-    public sealed class ServerTimeSync : BackgroundService
+    public sealed class ServerTimeSyncBackgroundService : BackgroundService
     {
         private readonly DeviceConnections _deviceConnections;
         private readonly DeviceOptions _options;
 
-        public ServerTimeSync(DeviceConnections deviceConnections, IOptions<DeviceOptions> options)
+        public ServerTimeSyncBackgroundService(DeviceConnections deviceConnections, IOptions<DeviceOptions> options)
         {
             _deviceConnections = deviceConnections;
             _options = options.Value;

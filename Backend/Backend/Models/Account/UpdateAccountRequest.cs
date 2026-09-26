@@ -2,9 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models
 {
-    /// <summary>
-    /// Changes to apply to the signed-in account. Null means leave unchanged.
-    /// </summary>
     public record UpdateAccountRequest
     {
         [MinLength(1)]

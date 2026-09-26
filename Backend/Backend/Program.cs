@@ -13,17 +13,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddSingleton<ConnectionMediator>();
-
 builder.Services.AddSingleton<DeviceConnections>();
 builder.Services.AddSingleton<DashboardConnections>();
-builder.Services.AddSingleton<DeviceStore>();
-builder.Services.AddHostedService<ServerTimeSync>();
+builder.Services.AddSingleton<IDeviceStore, DeviceStore>();
+builder.Services.AddSingleton<IDeviceKeyService, DeviceKeyService>();
+builder.Services.AddSingleton<IConnectionMediator, ConnectionMediator>();
+builder.Services.AddHostedService<ServerTimeSyncBackgroundService>();
 
-// Devices sign their telemetry with a key derived from this master key.
 builder.Services
     .AddOptions<DeviceOptions>()
     .Bind(builder.Configuration.GetSection(DeviceOptions.SectionName));
+
+builder.Services
+    .AddOptions<JwtOptions>()
+    .Bind(builder.Configuration.GetSection(JwtOptions.SectionName));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
@@ -33,16 +36,13 @@ builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
 
-// Bind the "Jwt" section onto JwtOptions
-builder.Services
-    .AddOptions<JwtOptions>()
-    .Bind(builder.Configuration.GetSection(JwtOptions.SectionName));
 
 builder.Services.AddSingleton<IPasswordHasher<Account>, PasswordHasher<Account>>();
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
 
-JwtOptions jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? throw new InvalidDataException(nameof(JwtOptions));
+JwtOptions jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() 
+    ?? throw new InvalidDataException(nameof(JwtOptions));
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -73,9 +73,10 @@ if (builder.Environment.IsDevelopment())
         .UseKestrel();
 }
 
+// Configure the HTTP request pipeline.
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseCors(options => options

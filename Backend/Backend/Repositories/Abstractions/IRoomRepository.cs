@@ -2,33 +2,30 @@ using Backend.Models;
 
 namespace Backend.Repositories
 {
-    /// <summary>
-    /// Database operations for rooms. Devices come with the room.
-    /// </summary>
     public interface IRoomRepository
     {
         /// <summary>
-        /// Find a room by id.
+        /// Finds a room by ID with its devices, or null if none exists
         /// </summary>
         Task<Room?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
 
         /// <summary>
-        /// List the rooms owned by an account.
+        /// Returns every room owned by the account with its devices
         /// </summary>
         Task<List<Room>> FindByAccountAsync(Guid accountId, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Add a new room.
+        /// Add a new room
         /// </summary>
         Task AddAsync(Room room, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Save changes to a room.
+        /// Update an existing room
         /// </summary>
         Task UpdateAsync(Room room, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Remove a room and the devices paired into it.
+        /// Deletes a room
         /// </summary>
         Task DeleteAsync(Room room, CancellationToken cancellationToken);
     }

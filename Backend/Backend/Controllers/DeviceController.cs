@@ -1,3 +1,4 @@
+using Backend.Connections;
 using Backend.Enumerations;
 using Backend.Models;
 using Backend.Repositories;
@@ -13,18 +14,23 @@ namespace Backend.Controllers
     [Route("[controller]")]
     public class DeviceController : ControllerBase
     {
-        private readonly ConnectionMediator _connectionMediator;
+        private readonly IConnectionMediator _connectionMediator;
         private readonly IDeviceRepository _deviceRepository;
         private readonly IRoomRepository _roomRepository;
+        private readonly IDeviceKeyService _deviceKeyService;
 
-        public DeviceController(ConnectionMediator connectionMediator, IDeviceRepository deviceRepository, IRoomRepository roomRepository)
+        public DeviceController(IConnectionMediator connectionMediator, IDeviceRepository deviceRepository, IRoomRepository roomRepository, IDeviceKeyService deviceKeyService)
         {
             _connectionMediator = connectionMediator;
             _deviceRepository = deviceRepository;
             _roomRepository = roomRepository;
+            _deviceKeyService = deviceKeyService;
         }
 
 
+        /// <summary>
+        /// Accepts a device WebSocket connection
+        /// </summary>
         [HttpGet("ws")]
         [AllowAnonymous]
         public async Task WebSocket([FromQuery] string macAddress, [FromQuery] DeviceType deviceType, CancellationToken cancellationToken)
@@ -42,6 +48,9 @@ namespace Backend.Controllers
         }
 
 
+        /// <summary>
+        /// Sets the state of an actuator owned by the account.
+        /// </summary>
         [HttpPost("actuator/state")]
         [Authorize]
         public async Task<ActionResult> SetActuatorState(SetActuatorStateRequest request, CancellationToken cancellationToken)
@@ -51,7 +60,7 @@ namespace Backend.Controllers
                 return Unauthorized();
             }
 
-            string macAddress = DeviceKey.NormalizeMacAddress(request.MacAddress);
+            string macAddress = _deviceKeyService.NormalizeMacAddress(request.MacAddress);
             Device? device = await _deviceRepository.FindByMacAddressAsync(macAddress, cancellationToken);
             if (device is null)
             {

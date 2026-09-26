@@ -1,8 +1,5 @@
 namespace Backend.Models
 {
-    /// <summary>
-    /// The password policy
-    /// </summary>
     public static class PasswordRules
     {
         public const int MinimumLength = 8;

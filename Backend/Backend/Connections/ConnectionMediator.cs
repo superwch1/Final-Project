@@ -1,4 +1,3 @@
-using Backend.Connections;
 using Backend.Enumerations;
 using Backend.Models;
 using Backend.Repositories;
@@ -7,39 +6,43 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Backend
+namespace Backend.Connections
 {
-    public class ConnectionMediator
+    public sealed class ConnectionMediator : IConnectionMediator
     {
         private readonly DeviceConnections _deviceConnections;
         private readonly DashboardConnections _dashboardConnections;
-        private readonly DeviceStore _deviceStore;
+        private readonly IDeviceStore _deviceStore;
         private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly IDeviceKeyService _deviceKeyService;
 
-        public ConnectionMediator(DeviceConnections deviceConnections, DashboardConnections dashboardConnections, DeviceStore deviceStore, IServiceScopeFactory serviceScopeFactory)
+        public ConnectionMediator(DeviceConnections deviceConnections, DashboardConnections dashboardConnections, IDeviceStore deviceStore, IServiceScopeFactory serviceScopeFactory, IDeviceKeyService deviceKeyService)
         {
             _dashboardConnections = dashboardConnections;
             _deviceConnections = deviceConnections;
             _deviceStore = deviceStore;
             _serviceScopeFactory = serviceScopeFactory;
+            _deviceKeyService = deviceKeyService;
 
             _deviceConnections.SubscribeToTelemetryReceived(OnTelemetryReceived);
             _dashboardConnections.SubscribeToDashboardSignedIn(OnDashboardSignedIn);
         }
 
 
+        /// <inheritdoc/>
         public async Task SetActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
         {
-            macAddress = DeviceKey.NormalizeMacAddress(macAddress);
+            macAddress = _deviceKeyService.NormalizeMacAddress(macAddress);
 
             bool hasChanged = await _deviceStore.SetActuatorState(macAddress, actuatorState, cancellationToken);
             if (hasChanged)
                 await _deviceConnections.NotifyActuatorState(macAddress, actuatorState, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task DeviceEcho(WebSocket webSocket, string macAddress, DeviceType deviceType, CancellationToken cancellationToken)
         {
-            macAddress = DeviceKey.NormalizeMacAddress(macAddress);
+            macAddress = _deviceKeyService.NormalizeMacAddress(macAddress);
 
             // send the unix time to the board
             List<string> initialMessages = [DeviceConnections.ServerTimeMessage()];
@@ -51,11 +54,15 @@ namespace Backend
             await _deviceConnections.DeviceEcho(webSocket, macAddress, deviceType, initialMessages, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task DashboardEcho(WebSocket webSocket, CancellationToken cancellationToken)
         {
             await _dashboardConnections.DashboardEcho(webSocket, cancellationToken);
         }
 
+        /// <summary>
+        /// Sends the latest telemetry of every device the account owns to a dashboard
+        /// </summary>
         private async Task OnDashboardSignedIn((Guid ConnectionId, Guid AccountId) eventArgs)
         {
             List<string> initialMessages = [];
@@ -72,6 +79,9 @@ namespace Backend
             await _dashboardConnections.SendSnapshot(eventArgs.ConnectionId, initialMessages, CancellationToken.None);
         }
 
+        /// <summary>
+        /// Registers the device, forwards changed telemetry to the dashboards and applies its policies
+        /// </summary>
         private async Task OnTelemetryReceived((string MacAddress, BaseTelemetry Telemetry) eventArgs)
         {
             await RegisterDeviceAsync(eventArgs.MacAddress, eventArgs.Telemetry.DeviceType);
@@ -93,8 +103,9 @@ namespace Backend
             await ApplyPoliciesAsync(eventArgs.MacAddress, eventArgs.Telemetry);
         }
 
+
         /// <summary>
-        /// Switch the actuators this sensor drives.
+        /// Switches the actuators driven by this sensor based on its policies
         /// </summary>
         private async Task ApplyPoliciesAsync(string sensorMacAddress, BaseTelemetry telemetry)
         {
@@ -125,13 +136,17 @@ namespace Backend
             }
         }
 
+        /// <summary>
+        /// Returns the other actuator state
+        /// </summary>
         private static ActuatorState Opposite(ActuatorState actuatorState)
         {
             return (actuatorState == ActuatorState.On) ? ActuatorState.Off : ActuatorState.On;
         }
 
+
         /// <summary>
-        /// The value a policy watches, or null when this telemetry does not carry it.
+        /// Returns the reading a policy watches, or null if the telemetry does not carry it
         /// </summary>
         private static double? ReadValue(BaseTelemetry telemetry, SensorReading reading)
         {
@@ -144,6 +159,9 @@ namespace Backend
             };
         }
 
+        /// <summary>
+        /// Returns the sensor's policies from the cache
+        /// </summary>
         private async Task<List<Policy>> FindPoliciesAsync(string sensorMacAddress)
         {
             if (_deviceStore.TryGetPolicies(sensorMacAddress, out List<Policy>? cached) && cached is not null)
@@ -163,7 +181,7 @@ namespace Backend
         }
 
         /// <summary>
-        /// Add a device the first time it reports
+        /// Adds the device to the database the first time it reports or updates its type if it changed
         /// </summary>
         private async Task RegisterDeviceAsync(string macAddress, DeviceType deviceType)
         {
@@ -197,8 +215,9 @@ namespace Backend
             _deviceStore.MarkRegistered(macAddress);
         }
 
+
         /// <summary>
-        /// The account whose room the device is paired into, or null when unpaired.
+        /// Returns the account that owns the device from the cache or database, or null if it is unpaired
         /// </summary>
         private async Task<Guid?> FindOwnerAccountIdAsync(string macAddress)
         {
@@ -213,8 +232,9 @@ namespace Backend
             return (owner == Guid.Empty) ? null : owner;
         }
 
+
         /// <summary>
-        /// Read the owner from the database, or Guid.Empty when the device is unpaired.
+        /// Reads the device owner from the database, or Guid.Empty if it is unpaired
         /// </summary>
         private async Task<Guid> ReadOwnerAccountIdAsync(string macAddress)
         {
@@ -239,8 +259,9 @@ namespace Backend
             return room?.AccountId ?? Guid.Empty;
         }
 
+
         /// <summary>
-        /// The normalized MAC of every device paired into the account's rooms.
+        /// Returns the MAC address of every device paired to the room
         /// </summary>
         private async Task<List<string>> FindMacAddressesAsync(Guid accountId)
         {
@@ -252,6 +273,9 @@ namespace Backend
             return rooms.SelectMany(room => room.Devices).Select(device => device.MacAddress).ToList();
         }
 
+        /// <summary>
+        /// Serialises telemetry to JSON for the dashboard, returning false for unknown telemetry types
+        /// </summary>
         private static bool TrySerializeTelemetry(BaseTelemetry telemetry, out string? message)
         {
             JsonSerializerOptions options = new JsonSerializerOptions(JsonSerializerDefaults.Web);

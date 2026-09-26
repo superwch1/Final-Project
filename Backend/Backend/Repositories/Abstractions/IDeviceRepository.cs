@@ -2,28 +2,29 @@ using Backend.Models;
 
 namespace Backend.Repositories
 {
-    /// <summary>
-    /// Database operations for paired devices.
-    /// </summary>
     public interface IDeviceRepository
     {
+
         /// <summary>
-        /// Find a device by its normalized MAC address.
+        /// Finds a device by normalised MAC address, or null if none exists
         /// </summary>
         Task<Device?> FindByMacAddressAsync(string macAddress, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Pair a device to a room.
+        /// Add a new device, returning false if one with the same MAC address already exists
         /// </summary>
         Task<bool> TryAddAsync(Device device, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Save changes to a device.
+        /// Update an existing device
         /// </summary>
         Task UpdateAsync(Device device, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Unpair a device.
+        /// Deletes a device
         /// </summary>
         Task DeleteAsync(Device device, CancellationToken cancellationToken);
     }

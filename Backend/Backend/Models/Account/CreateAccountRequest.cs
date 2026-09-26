@@ -2,9 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models
 {
-    /// <summary>
-    /// Details for a new account.
-    /// </summary>
     public record CreateAccountRequest
     {
         [EmailAddress]

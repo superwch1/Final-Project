@@ -2,38 +2,41 @@ using Backend.Models;
 
 namespace Backend.Repositories
 {
-    /// <summary>
-    /// Database operations for accounts.
-    /// </summary>
     public interface IAccountRepository
     {
+
         /// <summary>
-        /// Find an account by id.
+        /// Finds an account by ID, or null if none exists
         /// </summary>
         Task<Account?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Find an account by email.
+        /// Finds an account by normalised email, or null if none exists
         /// </summary>
         Task<Account?> FindByEmailAsync(string email, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Check whether an account with the email exists.
+        /// Returns true if an account already uses the normalised email
         /// </summary>
         Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Add a new account.
+        /// Create a new account
         /// </summary>
         Task AddAsync(Account account, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Save changes to an account.
+        /// Update an account
         /// </summary>
         Task UpdateAsync(Account account, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Remove an account.
+        /// Deletes an account
         /// </summary>
         Task DeleteAsync(Account account, CancellationToken cancellationToken);
     }

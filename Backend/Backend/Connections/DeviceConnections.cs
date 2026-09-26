@@ -18,15 +18,20 @@ namespace Backend.Connections
         private readonly ConcurrentDictionary<Guid, long> _lastTimestampByConnectionId = new();
 
         private readonly DeviceOptions _options;
+        private readonly IDeviceKeyService _deviceKeyService;
 
-        public DeviceConnections(IOptions<DeviceOptions> options)
+        public DeviceConnections(IOptions<DeviceOptions> options, IDeviceKeyService deviceKeyService)
         {
             _options = options.Value;
+            _deviceKeyService = deviceKeyService;
         }
 
         private event Func<(string MacAddress, BaseTelemetry Telemetry), Task>? _telemetryReceived;
 
 
+        /// <summary>
+        /// Registers a device connection and runs it until it closes, then removes it
+        /// </summary>
         public async Task DeviceEcho(WebSocket webSocket, string macAddress, DeviceType deviceType, IEnumerable<string> initialMessages, CancellationToken cancellationToken)
         {
             Guid connectionId = Guid.NewGuid();
@@ -41,6 +46,9 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// Sends the actuator state to every connection for the given MAC address
+        /// </summary>
         public async Task NotifyActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
         {
             if (_connectionIdsByMacAddress.TryGetValue(macAddress, out ConcurrentDictionary<Guid, object?>? connectionIds) && connectionIds != null)
@@ -53,7 +61,7 @@ namespace Backend.Connections
         }
 
         /// <summary>
-        /// The clock message a board syncs from.
+        /// Builds a JSON message containing the current server time in Unix milliseconds
         /// </summary>
         public static string ServerTimeMessage()
         {
@@ -61,16 +69,22 @@ namespace Backend.Connections
         }
 
         /// <summary>
-        /// Resend the clock to every connected device.
+        /// Sends the current server time to every connected device
         /// </summary>
         public Task BroadcastServerTime(CancellationToken cancellationToken)
         {
             return SendMessageToAllAsync(ServerTimeMessage(), cancellationToken);
         }
 
+        /// <summary>
+        /// Registers a handler that runs when valid telemetry is received from a device
+        /// </summary>
         public void SubscribeToTelemetryReceived(Func<(string MacAddress, BaseTelemetry Telemetry), Task> eventHandler)
             => _telemetryReceived += eventHandler;
 
+        /// <summary>
+        /// Verifies the timestamp and HMAC signature of a device message
+        /// </summary>
         protected override async Task OnMessageReceived(Guid connectionId, string message)
         {
             if (!_deviceTypeByConnectionId.TryGetValue(connectionId, out DeviceType deviceType) ||
@@ -95,8 +109,8 @@ namespace Backend.Connections
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 bool hasValidTimestamp = Math.Abs(now - timestamp) <= (long)_options.MaxClockSkew.TotalMilliseconds;
 
-                byte[] key = Encoding.UTF8.GetBytes(DeviceKey.Derive(_options.MasterKey, macAddress));
-                string signed = $"{DeviceKey.NormalizeMacAddress(macAddress)}|{deviceType}|{timestamp}|{data}";
+                byte[] key = Encoding.UTF8.GetBytes(_deviceKeyService.Derive(_options.MasterKey, macAddress));
+                string signed = $"{_deviceKeyService.NormalizeMacAddress(macAddress)}|{deviceType}|{timestamp}|{data}";
 
                 byte[] received = Convert.FromHexString(signature);
                 byte[] expected = HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(signed));
@@ -149,6 +163,9 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// Records the device type and MAC address for a new connection
+        /// </summary>
         private void AddDeviceConnection(Guid connectionId, string macAddress, DeviceType deviceType)
         {
             _deviceTypeByConnectionId.TryAdd(connectionId, deviceType);
@@ -158,6 +175,9 @@ namespace Backend.Connections
             connectionIds.TryAdd(connectionId, null);
         }
 
+        /// <summary>
+        /// Removes all tracking data for a closed connection
+        /// </summary>
         private void RemoveDeviceConnection(Guid connectionId, string macAddress)
         {
             _deviceTypeByConnectionId.TryRemove(connectionId, out _);

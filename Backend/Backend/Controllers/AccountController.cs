@@ -12,19 +12,8 @@ namespace Backend.Controllers
     [Route("[controller]")]
     public class AccountController : ControllerBase
     {
-        /// <summary>
-        /// Failures accumulate while keep logging in within this window.
-        /// </summary>
         public static readonly TimeSpan LoginAttemptWindow = TimeSpan.FromMinutes(15);
-
-        /// <summary>
-        /// The number of failures within <see cref="LoginAttemptWindow"/> triggers a lockout.
-        /// </summary>
         public const int MaxFailedAttempts = 5;
-
-        /// <summary>
-        /// How long an account stays locked once limit is reached.
-        /// </summary>
         public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
         private readonly IAccountRepository _accountRepository;
@@ -42,8 +31,9 @@ namespace Backend.Controllers
         }
 
 
+
         /// <summary>
-        /// Create an account and return a token.
+        /// Registers a new account and returns an access token
         /// </summary>
         [HttpPost]
         [AllowAnonymous]
@@ -71,8 +61,9 @@ namespace Backend.Controllers
         }
 
 
+
         /// <summary>
-        /// Verify credentials and return access token.
+        /// Signs in with email and password, locking the account after too many failed attempts
         /// </summary>
         [HttpPost("login")]
         [AllowAnonymous]
@@ -114,7 +105,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Issue a fresh token for the signed-in account.
+        /// Issues a fresh access token for the account
         /// </summary>
         [HttpPost("renew")]
         [Authorize]
@@ -130,8 +121,9 @@ namespace Backend.Controllers
         }
 
 
+
         /// <summary>
-        /// Change the signed-in account's name and/or password.
+        /// Changes the account's name, password or both
         /// </summary>
         [HttpPut]
         [Authorize]
@@ -164,7 +156,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Delete the signed-in account.
+        /// Deletes the account
         /// </summary>
         [HttpDelete]
         [Authorize]
@@ -181,16 +173,18 @@ namespace Backend.Controllers
         }
 
 
+
         /// <summary>
-        /// Check whether the account is currently inside a lockout period.
+        /// Returns true if the account is still locked out
         /// </summary>
         public static bool IsLockedOut(Account account, DateTimeOffset now)
         {
             return account.LockoutEndUtc.HasValue && (account.LockoutEndUtc.Value > now);
         }
 
+
         /// <summary>
-        /// Record a failed attempt and locking the account once the limit is reached.
+        /// Counts a failed login and locks the account once the limit is reached within the window
         /// </summary>
         public static void RegisterFailedAttempt(Account account, DateTimeOffset now)
         {
@@ -206,8 +200,9 @@ namespace Backend.Controllers
             }
         }
 
+
         /// <summary>
-        /// Clear the failure attempt after a successful log in.
+        /// Clears the failed login count and lockout
         /// </summary>
         public static void RegisterSuccessfulAttempt(Account account)
         {
@@ -216,6 +211,9 @@ namespace Backend.Controllers
             account.LockoutEndUtc = null;
         }
 
+        /// <summary>
+        /// Loads the account for the signed-in user, or null if the token has no valid account ID
+        /// </summary>
         private Task<Account?> FindSignedInAccountAsync(CancellationToken cancellationToken)
         {
             string? subject = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -227,12 +225,18 @@ namespace Backend.Controllers
             return _accountRepository.FindByIdAsync(accountId, cancellationToken);
         }
 
+        /// <summary>
+        /// Builds the error returned while the account is locked out
+        /// </summary>
         private ActionResult LockedOutResult(Account account, DateTimeOffset now)
         {
             TimeSpan retryAfter = account.LockoutEndUtc!.Value - now;
             return StatusCode(StatusCodes.Status400BadRequest, $"Too many failed attempts. Try again in {Math.Ceiling(retryAfter.TotalMinutes)} minute(s).");
         }
 
+        /// <summary>
+        /// Trims and upper-cases an email
+        /// </summary>
         private static string NormalizeEmail(string email)
         {
             return email.Trim().ToUpperInvariant();

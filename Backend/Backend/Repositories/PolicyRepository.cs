@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories
 {
-    /// <summary>
-    /// Database operations for automation policies.
-    /// </summary>
     public sealed class PolicyRepository : IPolicyRepository
     {
         private readonly AppDbContext _dbContext;
@@ -15,6 +12,7 @@ namespace Backend.Repositories
             _dbContext = dbContext;
         }
 
+        /// <inheritdoc/>
         public Task<Policy?> FindByIdAsync(Guid id, CancellationToken cancellationToken)
         {
             return _dbContext.Policies
@@ -23,6 +21,7 @@ namespace Backend.Repositories
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public Task<List<Policy>> FindBySensorAsync(string sensorMacAddress, CancellationToken cancellationToken)
         {
             return _dbContext.Policies
@@ -31,6 +30,7 @@ namespace Backend.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        /// <inheritdoc/>
         public Task<List<Policy>> FindByAccountAsync(Guid accountId, CancellationToken cancellationToken)
         {
             return _dbContext.Policies
@@ -42,6 +42,7 @@ namespace Backend.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task<bool> TryAddAsync(Policy policy, CancellationToken cancellationToken)
         {
             bool isDriven = await _dbContext.Policies
@@ -58,12 +59,14 @@ namespace Backend.Repositories
             return true;
         }
 
+        /// <inheritdoc/>
         public async Task UpdateAsync(Policy policy, CancellationToken cancellationToken)
         {
             _dbContext.Policies.Update(policy);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task DeleteByDeviceAsync(string macAddress, CancellationToken cancellationToken)
         {
             await _dbContext.Policies
@@ -71,6 +74,7 @@ namespace Backend.Repositories
                 .ExecuteDeleteAsync(cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task DeleteAsync(Policy policy, CancellationToken cancellationToken)
         {
             _dbContext.Policies.Remove(policy);

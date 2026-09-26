@@ -2,43 +2,46 @@ using Backend.Models;
 
 namespace Backend.Repositories
 {
-    /// <summary>
-    /// Database operations for automation policies.
-    /// </summary>
     public interface IPolicyRepository
     {
+
         /// <summary>
-        /// Find a policy by id.
+        /// Finds a policy by ID with its sensor and actuator, or null if none exists
         /// </summary>
         Task<Policy?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// The policies driven by one sensor.
+        /// Returns every policy that watches by a given sensor
         /// </summary>
         Task<List<Policy>> FindBySensorAsync(string sensorMacAddress, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Every policy belonging to an account, whichever room its devices are in.
+        /// Returns every policy whose sensor is in a room owned by the account
         /// </summary>
         Task<List<Policy>> FindByAccountAsync(Guid accountId, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Add a policy, returning false when the actuator already has one.
+        /// Add a new policy, returning false if the actuator is already driven by another policy.
         /// </summary>
         Task<bool> TryAddAsync(Policy policy, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Save changes to a policy.
+        /// Update an existing policy.
         /// </summary>
         Task UpdateAsync(Policy policy, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Remove every policy using this device, as either end.
+        /// Deletes every policy that uses the device
         /// </summary>
         Task DeleteByDeviceAsync(string macAddress, CancellationToken cancellationToken);
 
+
         /// <summary>
-        /// Remove a policy, freeing its actuator.
+        /// Deletes a policy
         /// </summary>
         Task DeleteAsync(Policy policy, CancellationToken cancellationToken);
     }

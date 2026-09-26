@@ -2,9 +2,9 @@ using Backend.Enumerations;
 using Backend.Models;
 using System.Collections.Concurrent;
 
-namespace Backend
+namespace Backend.Connections
 {
-    public class DeviceStore
+    public sealed class DeviceStore : IDeviceStore
     {
         const ActuatorState DefaultActuatorState = ActuatorState.Off;
 
@@ -13,91 +13,82 @@ namespace Backend
         private readonly ConcurrentDictionary<string, Guid> _ownerByMacAddress = new();
         private readonly ConcurrentDictionary<string, List<Policy>> _policiesBySensorMacAddress = new();
 
-        // Devices already known to the database.
         private readonly ConcurrentDictionary<string, object?> _registeredMacAddresses = new();
 
 
-        /// <summary>
-        /// Whether this device has already been added to the database.
-        /// </summary>
+        /// <inheritdoc/>
         public bool IsRegistered(string macAddress)
         {
             return _registeredMacAddresses.ContainsKey(macAddress);
         }
 
-        /// <summary>
-        /// Record that the device is in the database.
-        /// </summary>
+        /// <inheritdoc/>
         public void MarkRegistered(string macAddress)
         {
             _registeredMacAddresses.TryAdd(macAddress, null);
         }
 
 
-        /// <summary>
-        /// The cached policies a sensor drives, if they have been looked up.
-        /// </summary>
+        /// <inheritdoc/>
         public bool TryGetPolicies(string sensorMacAddress, out List<Policy>? policies)
         {
             return _policiesBySensorMacAddress.TryGetValue(sensorMacAddress, out policies);
         }
 
-        /// <summary>
-        /// Remember the policies a sensor drives. An empty list is worth caching too.
-        /// </summary>
+
+        /// <inheritdoc/>
         public void SetPolicies(string sensorMacAddress, List<Policy> policies)
         {
             _policiesBySensorMacAddress[sensorMacAddress] = policies;
         }
 
-        /// <summary>
-        /// Drop a sensor's policies, so the next reading looks them up again.
-        /// </summary>
+
+        /// <inheritdoc/>
         public void ForgetPolicies(string sensorMacAddress)
         {
             _policiesBySensorMacAddress.TryRemove(sensorMacAddress, out _);
         }
 
 
-        /// <summary>
-        /// The cached owner of a device.
-        /// </summary>
+        /// <inheritdoc/>
         public bool TryGetOwner(string macAddress, out Guid accountId)
         {
             return _ownerByMacAddress.TryGetValue(macAddress, out accountId);
         }
 
-        /// <summary>
-        /// Set who owns a device. 
-        /// </summary>
+
+        /// <inheritdoc/>
         public void SetOwner(string macAddress, Guid accountId)
         {
             _ownerByMacAddress[macAddress] = accountId;
         }
 
-        /// <summary>
-        /// Forget the device owner.
-        /// </summary>
+
+        /// <inheritdoc/>
         public void ForgetOwner(string macAddress)
         {
             _ownerByMacAddress.TryRemove(macAddress, out _);
         }
 
+        /// <inheritdoc/>
         public IEnumerable<string> GetMacAddresses()
         {
             return _telemetryByMacAddress.ToArray().Select(x => x.Key);
         }
 
+        /// <inheritdoc/>
         public bool TryGetTelemetry(string macAddress, out BaseTelemetry? telemetry)
         {
             return _telemetryByMacAddress.TryGetValue(macAddress, out telemetry);
         }
 
+        /// <inheritdoc/>
         public ActuatorState GetActuatorState(string macAddress)
         {
             return _actuatorStateByMacAddress.GetOrAdd(macAddress, _ => DefaultActuatorState);
         }
 
+        /// <inheritdoc/>
         public async Task<bool> SetActuatorState(string macAddress, ActuatorState actuatorState, CancellationToken cancellationToken)
         {
             bool hasStateChanged = false;
@@ -110,6 +101,7 @@ namespace Backend
             return hasStateChanged;
         }
 
+        /// <inheritdoc/>
         public bool RecordTelemetry(string macAddress, BaseTelemetry telemetry)
         {
             // default is true since when device just connected, it is Add 
@@ -123,6 +115,9 @@ namespace Backend
             return hasChanged;
         }
 
+        /// <summary>
+        /// Returns true if two telemetry values of the same type differ
+        /// </summary>
         private static bool HasTelemetryChanged(BaseTelemetry telemetry, BaseTelemetry oldTelemetry)
         {
             if (telemetry is TempAndHumidTelemetry tempAndHumidTelemetry && oldTelemetry is TempAndHumidTelemetry oldTempAndHumidTelemetry)

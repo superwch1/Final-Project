@@ -1,8 +1,5 @@
 namespace Backend.Models
 {
-    /// <summary>
-    /// Account details.
-    /// </summary>
     public record AccountResponse
     {
         public required Guid Id { get; init; }

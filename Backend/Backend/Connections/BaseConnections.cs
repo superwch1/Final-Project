@@ -9,8 +9,14 @@ namespace Backend.Connections
         private readonly ConcurrentDictionary<Guid, WebSocket> _webSocketByConnectionId = new();
 
 
+        /// <summary>
+        /// Handles a text message received from a client
+        /// </summary>
         protected abstract Task OnMessageReceived(Guid connectionId, string message);
 
+        /// <summary>
+        /// Sends a message to a connected client
+        /// </summary>
         protected async Task SendMessageAsync(Guid connectionId, string message, CancellationToken cancellationToken)
         {
             if (_webSocketByConnectionId.TryGetValue(connectionId, out WebSocket? webSocket) && webSocket != null && webSocket.State == WebSocketState.Open)
@@ -19,6 +25,9 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// Sends a message to every connected client
+        /// </summary>
         protected async Task SendMessageToAllAsync(string message, CancellationToken cancellationToken)
         {
             foreach (WebSocket webSocket in _webSocketByConnectionId.ToArray().Select(x => x.Value))
@@ -27,6 +36,9 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// Registers the socket, sends initial messages, then receives messages until the client closes.
+        /// </summary>
         protected virtual async Task Echo(Guid connectionId, WebSocket webSocket, IEnumerable<string> initialMessages, CancellationToken cancellationToken)
         {
             try
@@ -55,6 +67,9 @@ namespace Backend.Connections
             }
         }
 
+        /// <summary>
+        /// Sends a UTF-8 text if the socket is still open.
+        /// </summary>
         private static async Task SendTextAsync(WebSocket webSocket, string message, CancellationToken cancellationToken)
         {
             if (webSocket.State == WebSocketState.Open)

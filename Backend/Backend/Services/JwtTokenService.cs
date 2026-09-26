@@ -6,9 +6,6 @@ using System.Text;
 
 namespace Backend.Services
 {
-    /// <summary>
-    /// Issues access tokens for accounts.
-    /// </summary>
     public sealed class JwtTokenService : IJwtTokenService
     {
         private readonly JwtOptions _options;
@@ -22,9 +19,7 @@ namespace Backend.Services
             _signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
         }
 
-        /// <summary>
-        /// Create a signed access token for an account.
-        /// </summary>
+        /// <inheritdoc/>
         public string CreateToken(Account account)
         {
             SecurityTokenDescriptor descriptor = new()

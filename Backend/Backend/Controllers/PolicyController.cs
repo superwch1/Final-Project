@@ -1,3 +1,4 @@
+using Backend.Connections;
 using Backend.Enumerations;
 using Backend.Models;
 using Backend.Repositories;
@@ -16,23 +17,26 @@ namespace Backend.Controllers
         private readonly IPolicyRepository _policyRepository;
         private readonly IDeviceRepository _deviceRepository;
         private readonly IRoomRepository _roomRepository;
-        private readonly DeviceStore _deviceStore;
+        private readonly IDeviceStore _deviceStore;
+        private readonly IDeviceKeyService _deviceKeyService;
 
         public PolicyController(
             IPolicyRepository policyRepository,
             IDeviceRepository deviceRepository,
             IRoomRepository roomRepository,
-            DeviceStore deviceStore)
+            IDeviceStore deviceStore,
+            IDeviceKeyService deviceKeyService)
         {
             _policyRepository = policyRepository;
             _deviceRepository = deviceRepository;
             _roomRepository = roomRepository;
             _deviceStore = deviceStore;
+            _deviceKeyService = deviceKeyService;
         }
 
 
         /// <summary>
-        /// List the signed-in account's policies.
+        /// Returns every policy owned by the account.
         /// </summary>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PolicyResponse>>> GetAll(CancellationToken cancellationToken)
@@ -48,13 +52,13 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Link a sensor to an actuator.
+        /// Creates a policy
         /// </summary>
         [HttpPost]
         public async Task<ActionResult<PolicyResponse>> Create(CreatePolicyRequest request, CancellationToken cancellationToken)
         {
-            string sensorMacAddress = DeviceKey.NormalizeMacAddress(request.SensorMacAddress);
-            string actuatorMacAddress = DeviceKey.NormalizeMacAddress(request.ActuatorMacAddress);
+            string sensorMacAddress = _deviceKeyService.NormalizeMacAddress(request.SensorMacAddress);
+            string actuatorMacAddress = _deviceKeyService.NormalizeMacAddress(request.ActuatorMacAddress);
 
             if (sensorMacAddress == actuatorMacAddress)
             {
@@ -63,7 +67,6 @@ namespace Backend.Controllers
 
             Device? sensor = await FindOwnedDeviceAsync(sensorMacAddress, cancellationToken);
             Device? actuator = await FindOwnedDeviceAsync(actuatorMacAddress, cancellationToken);
-
             if (sensor is null || actuator is null)
             {
                 return NotFound();
@@ -110,8 +113,9 @@ namespace Backend.Controllers
         }
 
 
+
         /// <summary>
-        /// Change a policy
+        /// Update the policy
         /// </summary>
         [HttpPut("{policyId}")]
         public async Task<ActionResult<PolicyResponse>> Update(Guid policyId, UpdatePolicyRequest request, CancellationToken cancellationToken)
@@ -141,7 +145,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Remove a policy
+        /// Deletes an policy
         /// </summary>
         [HttpDelete("{policyId}")]
         public async Task<ActionResult> Delete(Guid policyId, CancellationToken cancellationToken)
@@ -161,7 +165,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Whether the sensor reports the value the policy wants to watch.
+        /// Returns true if the sensor's device type reports the given reading
         /// </summary>
         private static bool Reports(Device sensor, SensorReading reading)
         {
@@ -173,8 +177,9 @@ namespace Backend.Controllers
             };
         }
 
+
         /// <summary>
-        /// A device, or null when it is not paired into one of the caller's rooms.
+        /// Loads a device only if it is paired to a room owned by the account
         /// </summary>
         private async Task<Device?> FindOwnedDeviceAsync(string macAddress, CancellationToken cancellationToken)
         {
@@ -201,7 +206,7 @@ namespace Backend.Controllers
         }
 
         /// <summary>
-        /// A policy, or null when it does not exist or belongs to someone else.
+        /// Loads a policy only if its sensor is owned by the account
         /// </summary>
         private async Task<Policy?> FindPolicyIfOwnedAsync(Guid policyId, CancellationToken cancellationToken)
         {
@@ -214,6 +219,9 @@ namespace Backend.Controllers
             return (await FindOwnedDeviceAsync(policy.SensorMacAddress, cancellationToken) is null) ? null : policy;
         }
 
+        /// <summary>
+        /// Reads the account ID from the user's claims
+        /// </summary>
         private bool TryGetAccountId(out Guid accountId)
         {
             return Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out accountId);

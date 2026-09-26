@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories
 {
-    /// <summary>
-    /// Database operations for paired devices.
-    /// </summary>
     public sealed class DeviceRepository : IDeviceRepository
     {
         private readonly AppDbContext _dbContext;
@@ -15,12 +12,14 @@ namespace Backend.Repositories
             _dbContext = dbContext;
         }
 
+        /// <inheritdoc/>
         public Task<Device?> FindByMacAddressAsync(string macAddress, CancellationToken cancellationToken)
         {
             return _dbContext.Devices
                 .FirstOrDefaultAsync(x => x.MacAddress == macAddress, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task<bool> TryAddAsync(Device device, CancellationToken cancellationToken)
         {
             bool isPaired = await _dbContext.Devices
@@ -37,12 +36,14 @@ namespace Backend.Repositories
             return true;
         }
 
+        /// <inheritdoc/>
         public async Task UpdateAsync(Device device, CancellationToken cancellationToken)
         {
             _dbContext.Devices.Update(device);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task DeleteAsync(Device device, CancellationToken cancellationToken)
         {
             _dbContext.Devices.Remove(device);

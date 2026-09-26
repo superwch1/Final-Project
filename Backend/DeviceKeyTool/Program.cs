@@ -16,14 +16,16 @@ if (masterKey.Length == 0)
     return;
 }
 
+IDeviceKeyService deviceKeyService = new DeviceKeyService();
+
 Console.Write("MAC address: ");
 string macAddress = Console.ReadLine() ?? string.Empty;
 
-if (DeviceKey.NormalizeMacAddress(macAddress).Length != 12)
+if (deviceKeyService.NormalizeMacAddress(macAddress).Length != 12)
 {
     Console.WriteLine("That is not a MAC address.");
     return;
 }
 
 Console.WriteLine();
-Console.WriteLine($"DeviceKey = {DeviceKey.Derive(masterKey, macAddress)};");
+Console.WriteLine($"DeviceKey = {deviceKeyService.Derive(masterKey, macAddress)};");

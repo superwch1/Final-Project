@@ -1,8 +1,5 @@
 namespace Backend.Models
 {
-    /// <summary>
-    /// A room and the devices paired into it.
-    /// </summary>
     public record RoomResponse
     {
         public required Guid Id { get; init; }

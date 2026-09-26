@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Backend.Connections;
+using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
 
 namespace Backend.Controllers
@@ -6,14 +7,17 @@ namespace Backend.Controllers
     [Route("[controller]")]
     public class DashboardController : Controller
     {
-        private readonly ConnectionMediator _connectionMediator;
+        private readonly IConnectionMediator _connectionMediator;
 
-        public DashboardController(ConnectionMediator connectionMediator)
+        public DashboardController(IConnectionMediator connectionMediator)
         {
             _connectionMediator = connectionMediator;
         }
 
 
+        /// <summary>
+        /// Accepts a dashboard WebSocket connection
+        /// </summary>
         [HttpGet("ws")]
         public async Task WebSocket(CancellationToken cancellationToken)
         {

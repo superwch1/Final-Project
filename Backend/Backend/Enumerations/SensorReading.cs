@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Backend.Enumerations
 {
     /// <summary>
-    /// Which value a policy watches
+    /// The type of reading a sensor reports.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum SensorReading

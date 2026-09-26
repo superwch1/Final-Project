@@ -1,4 +1,4 @@
-using Backend.Enumerations;
+using Backend.Connections;
 using Backend.Models;
 using Backend.Repositories;
 using Backend.Services;
@@ -16,19 +16,22 @@ namespace Backend.Controllers
         private readonly IRoomRepository _roomRepository;
         private readonly IDeviceRepository _deviceRepository;
         private readonly IPolicyRepository _policyRepository;
-        private readonly DeviceStore _deviceStore;
+        private readonly IDeviceStore _deviceStore;
+        private readonly IDeviceKeyService _deviceKeyService;
 
-        public RoomController(IRoomRepository roomRepository, IDeviceRepository deviceRepository, IPolicyRepository policyRepository, DeviceStore deviceStore)
+        public RoomController(IRoomRepository roomRepository, IDeviceRepository deviceRepository, IPolicyRepository policyRepository, IDeviceStore deviceStore, IDeviceKeyService deviceKeyService)
         {
             _roomRepository = roomRepository;
             _deviceRepository = deviceRepository;
             _policyRepository = policyRepository;
             _deviceStore = deviceStore;
+            _deviceKeyService = deviceKeyService;
         }
 
 
+
         /// <summary>
-        /// List the signed-in account's rooms and devices.
+        /// Returns every room owned by the account
         /// </summary>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RoomResponse>>> GetAll(CancellationToken cancellationToken)
@@ -45,7 +48,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Create a room.
+        /// Creates a room 
         /// </summary>
         [HttpPost]
         public async Task<ActionResult<RoomResponse>> Create(CreateRoomRequest request, CancellationToken cancellationToken)
@@ -68,8 +71,9 @@ namespace Backend.Controllers
         }
 
 
+
         /// <summary>
-        /// Rename a room.
+        /// Renames a room
         /// </summary>
         [HttpPut("{roomId}")]
         public async Task<ActionResult<RoomResponse>> Update(Guid roomId, UpdateRoomRequest request, CancellationToken cancellationToken)
@@ -89,7 +93,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Delete a room and unpair their devices.
+        /// Deletes a room
         /// </summary>
         [HttpDelete("{roomId}")]
         public async Task<ActionResult> Delete(Guid roomId, CancellationToken cancellationToken)
@@ -112,8 +116,9 @@ namespace Backend.Controllers
         }
 
 
+
         /// <summary>
-        /// Pair a device into a room.
+        /// Pairs a device that has already in a room
         /// </summary>
         [HttpPost("{roomId}/device")]
         public async Task<ActionResult<DeviceResponse>> PairDevice(Guid roomId, PairDeviceRequest request, CancellationToken cancellationToken)
@@ -124,7 +129,7 @@ namespace Backend.Controllers
                 return NotFound();
             }
 
-            string macAddress = DeviceKey.NormalizeMacAddress(request.MacAddress);
+            string macAddress = _deviceKeyService.NormalizeMacAddress(request.MacAddress);
             if (macAddress.Length != 12)
             {
                 return BadRequest("That is not a MAC address.");
@@ -152,7 +157,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Unpair a device.
+        /// Removes a device from a room and deletes its policies
         /// </summary>
         [HttpDelete("{roomId}/device/{macAddress}")]
         public async Task<ActionResult> UnpairDevice(Guid roomId, string macAddress, CancellationToken cancellationToken)
@@ -163,7 +168,7 @@ namespace Backend.Controllers
                 return NotFound();
             }
 
-            Device? device = await _deviceRepository.FindByMacAddressAsync(DeviceKey.NormalizeMacAddress(macAddress), cancellationToken);
+            Device? device = await _deviceRepository.FindByMacAddressAsync(_deviceKeyService.NormalizeMacAddress(macAddress), cancellationToken);
             if (device is null || device.RoomId != roomId)
             {
                 return NotFound();
@@ -182,7 +187,7 @@ namespace Backend.Controllers
 
 
         /// <summary>
-        /// Find a room, or null when it does not exist or belongs to someone else.
+        /// Loads a room only if it is owned by the account
         /// </summary>
         private async Task<Room?> FindRoomIfOwnedAsync(Guid roomId, CancellationToken cancellationToken)
         {
@@ -195,6 +200,9 @@ namespace Backend.Controllers
             return (room?.AccountId == accountId) ? room : null;
         }
 
+        /// <summary>
+        /// Reads the account ID from the user's claims
+        /// </summary>
         private bool TryGetAccountId(out Guid accountId)
         {
             return Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out accountId);

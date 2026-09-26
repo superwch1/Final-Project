@@ -2,9 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models
 {
-    /// <summary>
-    /// Credentials for signing in.
-    /// </summary>
     public record LoginRequest
     {
         [EmailAddress]
