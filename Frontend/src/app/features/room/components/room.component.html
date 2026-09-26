@@ -1,0 +1,57 @@
+<section class="card mb-4 max-w-none">
+  <header class="row-between mb-4">
+    <h2 class="text-lg font-semibold">{{ room().name }}</h2>
+
+    <div class="flex gap-2">
+      <button class="button-secondary" type="button" (click)="renameRoom()">Rename</button>
+      <button class="button-secondary" type="button" (click)="deleteRoom()">Delete</button>
+    </div>
+  </header>
+
+  @if (room().devices.length === 0) {
+    <p class="subtitle mb-4">No devices paired.</p>
+  } @else {
+    <ul class="mb-4 divide-y divide-slate-200">
+      @for (device of room().devices; track device.macAddress) {
+        <li
+          app-device
+          class="py-3"
+          [device]="device"
+          [rooms]="rooms()"
+          [(policies)]="policies"
+          (unpairRequested)="unpairDevice(device.macAddress)"
+          (errorMessageChange)="errorMessageChange.emit($event)"></li>
+      }
+    </ul>
+  }
+
+  <form class="flex flex-wrap items-end gap-2" [formGroup]="deviceForm" (ngSubmit)="pairDevice()">
+    <label class="field mb-0 grow">
+      <span class="field-label">MAC address</span>
+      <input class="field-input" type="text" formControlName="macAddress" placeholder="5C:CF:7F:11:22:33" />
+
+      @if (deviceForm.controls['macAddress'].touched && deviceForm.controls['macAddress'].invalid) {
+        @if (deviceForm.controls['macAddress'].hasError('required')) {
+          <span class="field-error">Enter a MAC address.</span>
+        } @else {
+          <span class="field-error">Use 12 hex digits such as 5C:CF:7F:11:22:33.</span>
+        }
+      }
+    </label>
+
+    <label class="field mb-0 grow">
+      <span class="field-label">Device name</span>
+      <input class="field-input" type="text" formControlName="name" placeholder="Temperature sensor" />
+
+      @if (deviceForm.controls['name'].touched && deviceForm.controls['name'].invalid) {
+        @if (deviceForm.controls['name'].hasError('required')) {
+          <span class="field-error">Enter a device name.</span>
+        } @else {
+          <span class="field-error">At most 128 characters.</span>
+        }
+      }
+    </label>
+
+    <button class="button-primary" type="submit" [disabled]="deviceForm.invalid">Pair</button>
+  </form>
+</section>

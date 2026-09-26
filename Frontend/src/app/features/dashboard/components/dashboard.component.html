@@ -1,0 +1,60 @@
+<div class="page">
+  <div class="container-narrow">
+    <header class="row-between mb-8">
+      <div>
+        <p class="subtitle">Smart Room</p>
+        <h1 class="title">Welcome{{ name() ? ', ' + name() : '' }}</h1>
+      </div>
+
+      @if (isSignedIn()) {
+        <button class="button-secondary" type="button" (click)="signOut()">Sign out</button>
+      } @else {
+        <div class="flex gap-2">
+          <a class="button-secondary" routerLink="/login">Sign in</a>
+          <a class="button-primary" routerLink="/register">Register</a>
+        </div>
+      }
+    </header>
+
+    @if (isSignedIn()) {
+      <h2 class="title mb-4">My rooms</h2>
+
+      @if (errorMessage(); as message) {
+        <p class="alert-error">{{ message }}</p>
+      }
+
+      <form class="mb-8 flex flex-wrap items-end gap-2" [formGroup]="roomForm" (ngSubmit)="createRoom()">
+        <label class="field mb-0 grow">
+          <span class="field-label">New room</span>
+          <input class="field-input" type="text" formControlName="name" placeholder="Living room" />
+
+          @if (roomForm.controls.name.touched && roomForm.controls.name.invalid) {
+            @if (roomForm.controls.name.hasError('required')) {
+              <span class="field-error">Enter a room name.</span>
+            } @else {
+              <span class="field-error">At most 128 characters.</span>
+            }
+          }
+        </label>
+
+        <button class="button-primary" type="submit" [disabled]="roomForm.invalid">Create</button>
+      </form>
+
+      @if (isLoading()) {
+        <p class="subtitle">Loading…</p>
+      } @else if (rooms().length === 0) {
+        <p class="subtitle">No rooms yet.</p>
+      }
+
+      @for (room of rooms(); track room.id) {
+        <app-room
+          [room]="room"
+          [rooms]="rooms()"
+          [(policies)]="policies"
+          (roomUpdated)="replaceRoom($event)"
+          (roomDeleted)="removeRoom($event)"
+          (errorMessageChange)="errorMessage.set($event)" />
+      }
+    }
+  </div>
+</div>

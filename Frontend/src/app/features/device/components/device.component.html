@@ -1,0 +1,118 @@
+@let telemetry = telemetryFor();
+@let policy = policyFor();
+
+<div class="flex flex-wrap items-center justify-between gap-4">
+  <span>
+    {{ device().name }}
+    <span class="subtitle">{{ formatMacAddress(device().macAddress) }}</span>
+  </span>
+
+  <span class="flex items-center gap-2">
+    @if (telemetry === undefined) {
+      <span class="subtitle">Waiting for the device…</span>
+    } @else if (isActuator(telemetry)) {
+      <span class="subtitle">{{ actuatorState(telemetry) }}</span>
+
+      @if (policy === undefined || !policy.isEnabled) {
+        <button
+          class="button-primary"
+          type="button"
+          (click)="toggleActuator(telemetry)">
+          Switch {{ actuatorState(telemetry) === ActuatorState.On ? 'off' : 'on' }}
+        </button>
+      }
+    } @else {
+      <span class="font-medium">{{ reading(telemetry) }}</span>
+    }
+
+    <button class="button-secondary" type="button" (click)="unpair()">
+      Unpair
+    </button>
+  </span>
+</div>
+
+@if (policy !== undefined) {
+  <div class="row-between mt-2 rounded-md bg-slate-50 px-3 py-2">
+    <span class="subtitle">
+      Driven by {{ policy.sensorName }} ({{ roomNameFor(policy.sensorMacAddress) }}):
+      {{ policy.reading }} {{ policy.comparison === Comparison.Above ? 'above' : 'below' }}
+      {{ policy.threshold }} turns it
+      {{ policy.actuatorState === ActuatorState.On ? 'on' : 'off' }}.
+      {{ policy.isEnabled ? 'Automatic.' : 'Manual, you are in control.' }}
+    </span>
+
+    <span class="flex gap-2">
+      <button class="button-secondary" type="button" (click)="toggleAutomatic(policy)">
+        {{ policy.isEnabled ? 'Take control' : 'Use automation' }}
+      </button>
+
+      <button class="button-secondary" type="button" (click)="deletePolicy(policy)">Remove</button>
+    </span>
+  </div>
+}
+
+@if (isSensor()) {
+  @for (driven of drivenPolicies(); track driven.id) {
+    <p class="subtitle mt-2">
+      Drives {{ driven.actuatorName }} ({{ roomNameFor(driven.actuatorMacAddress) }}).
+    </p>
+  }
+
+  @let form = policyForm();
+
+  @if (availableActuators().length > 0) {
+    <form
+      class="mt-2 flex flex-wrap items-end gap-2 rounded-md bg-slate-50 px-3 py-2"
+      [formGroup]="form"
+      (ngSubmit)="createPolicy()">
+
+      <label class="field mb-0">
+        <span class="field-label">When</span>
+        <select class="field-input" formControlName="reading">
+          @for (option of readings(); track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field mb-0">
+        <span class="field-label">is</span>
+        <select class="field-input" formControlName="comparison">
+          <option [value]="Comparison.Above">above</option>
+          <option [value]="Comparison.Below">below</option>
+        </select>
+      </label>
+
+      <label class="field mb-0 w-24">
+        <span class="field-label">value</span>
+        <input class="field-input" type="number" formControlName="threshold" />
+      </label>
+
+      <label class="field mb-0 grow">
+        <span class="field-label">switch</span>
+        <select class="field-input" formControlName="actuatorMacAddress">
+          <option value="">Choose an actuator</option>
+          @for (entry of availableActuators(); track entry.device.macAddress) {
+            <option [value]="entry.device.macAddress">
+              {{ entry.device.name }} - {{ entry.roomName }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label class="field mb-0">
+        <span class="field-label">to</span>
+        <select class="field-input" formControlName="actuatorState">
+          <option [value]="ActuatorState.On">on</option>
+          <option [value]="ActuatorState.Off">off</option>
+        </select>
+      </label>
+
+      <button class="button-primary" type="submit" [disabled]="form.invalid">Automate</button>
+    </form>
+  } @else {
+    <p class="subtitle mt-2">
+      Every actuator is already driven by a sensor. Pair another actuator to automate it.
+    </p>
+  }
+}
