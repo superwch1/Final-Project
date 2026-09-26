@@ -27,6 +27,7 @@ export class RegisterComponent {
     password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[0-9])(?=.*[^A-Za-z0-9]).*$/)]]
   });
 
+  /** Creates the account and opens the dashboard */
   protected submit(): void {
     if (this.form.invalid || this.isSubmitting()) {
       return;

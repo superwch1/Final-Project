@@ -1,8 +1,9 @@
 <div class="page">
   <div class="container-narrow">
+
+    <!-- Header with the welcome message -->
     <header class="row-between mb-8">
       <div>
-        <p class="subtitle">Smart Room</p>
         <h1 class="title">Welcome{{ name() ? ', ' + name() : '' }}</h1>
       </div>
 
@@ -23,6 +24,7 @@
         <p class="alert-error">{{ message }}</p>
       }
 
+      <!-- Form to create a room -->
       <form class="mb-8 flex flex-wrap items-end gap-2" [formGroup]="roomForm" (ngSubmit)="createRoom()">
         <label class="field mb-0 grow">
           <span class="field-label">New room</span>
@@ -46,12 +48,13 @@
         <p class="subtitle">No rooms yet.</p>
       }
 
+      <!-- One section per room -->
       @for (room of rooms(); track room.id) {
         <app-room
           [room]="room"
           [rooms]="rooms()"
           [(policies)]="policies"
-          (roomUpdated)="replaceRoom($event)"
+          (roomUpdated)="updateRoom($event)"
           (roomDeleted)="removeRoom($event)"
           (errorMessageChange)="errorMessage.set($event)" />
       }

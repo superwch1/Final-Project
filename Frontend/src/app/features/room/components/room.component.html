@@ -1,4 +1,5 @@
 <section class="card mb-4 max-w-none">
+  <!-- Room name with rename and delete -->
   <header class="row-between mb-4">
     <h2 class="text-lg font-semibold">{{ room().name }}</h2>
 
@@ -8,6 +9,7 @@
     </div>
   </header>
 
+  <!-- Paired devices -->
   @if (room().devices.length === 0) {
     <p class="subtitle mb-4">No devices paired.</p>
   } @else {
@@ -25,6 +27,7 @@
     </ul>
   }
 
+  <!-- Form to pair a device -->
   <form class="flex flex-wrap items-end gap-2" [formGroup]="deviceForm" (ngSubmit)="pairDevice()">
     <label class="field mb-0 grow">
       <span class="field-label">MAC address</span>

@@ -30,34 +30,23 @@ export class DeviceComponent {
   protected readonly ActuatorState = ActuatorState;
   protected readonly Comparison = Comparison;
 
-  /** The device this row shows. */
   readonly device = input.required<DeviceResponse>();
-
-  /** Every room the user owns, so a sensor can drive an actuator in another room. */
   readonly rooms = input.required<RoomResponse[]>();
-
-  /** Every policy the user owns, shared with the other devices. */
   readonly policies = model.required<PolicyResponse[]>();
-
-  /** Raised after the user confirms they want to unpair the device. */
   readonly unpairRequested = output<void>();
-
-  /** Raised with an error to show, or null to clear it. */
   readonly errorMessageChange = output<string | null>();
 
-  // Created on first use, since it needs the device input to pick the default reading.
   private automationForm: FormGroup | undefined;
 
-  /** The policies this sensor drives. */
   protected readonly drivenPolicies = computed(() =>
     this.policies().filter(policy => policy.sensorMacAddress === this.device().macAddress));
 
-  /** The policy driving this actuator, if one does. */
+  /** Return the policy driving this actuator */
   protected policyFor(): PolicyResponse | undefined {
     return this.policies().find(policy => policy.actuatorMacAddress === this.device().macAddress);
   }
 
-  /** Hand control to the policy, or take it back. */
+  /** Override the existing policy, or return the control */
   protected toggleAutomatic(policy: PolicyResponse): void {
     const request = {
       reading: policy.reading,
@@ -76,12 +65,13 @@ export class DeviceComponent {
     });
   }
 
+  /** Return true if this device is a sensor */
   protected isSensor(): boolean {
     const deviceType = this.device().deviceType;
     return (deviceType === DeviceType.LightSensor) || (deviceType === DeviceType.TempAndHumidSensor);
   }
 
-  /** The readings this sensor reports, so a light sensor cannot watch humidity. */
+  /** Return the readings this sensor */
   protected readings(): SensorReading[] {
     const deviceType = this.device().deviceType;
 
@@ -96,7 +86,7 @@ export class DeviceComponent {
     return [];
   }
 
-  /** Actuators in any of the user's rooms that no policy drives yet. */
+  /** Return actuators without policy yet */
   protected availableActuators(): { device: DeviceResponse; roomName: string }[] {
     const driven = new Set(this.policies().map(policy => policy.actuatorMacAddress));
 
@@ -105,6 +95,7 @@ export class DeviceComponent {
       .filter(entry => this.isActuatorDevice(entry.device) && !driven.has(entry.device.macAddress));
   }
 
+  /** Return the automation form */
   protected policyForm(): FormGroup {
     if (this.automationForm === undefined) {
       this.automationForm = this.formBuilder.nonNullable.group({
@@ -119,6 +110,7 @@ export class DeviceComponent {
     return this.automationForm;
   }
 
+  /** Create a policy */
   protected createPolicy(): void {
     const form = this.policyForm();
 
@@ -145,6 +137,7 @@ export class DeviceComponent {
     });
   }
 
+  /** Deletes a policy */
   protected deletePolicy(policy: PolicyResponse): void {
     if (!confirm(`Remove the automation driving ${policy.actuatorName}?`)) {
       return;
@@ -159,27 +152,32 @@ export class DeviceComponent {
     });
   }
 
+  /** Return the name of the room */
   protected roomNameFor(macAddress: string): string {
     return this.rooms().find(room => room.devices.some(device => device.macAddress === macAddress))?.name ?? '';
   }
 
-  /** Groups a stored MAC into pairs for display: 98CDAC261D12 -> 98:CD:AC:26:1D:12 */
+  /** Format a stored MAC address */
   protected formatMacAddress(macAddress: string): string {
     return macAddress.match(/.{1,2}/g)?.join(':') ?? macAddress;
   }
 
+  /** Return the latest telemetry */
   protected telemetryFor(): BaseTelemetry | undefined {
     return this.telemetryService.telemetry()[TelemetryService.normalizeMacAddress(this.device().macAddress)];
   }
 
+  /** Return true if the telemetry comes from an actuator */
   protected isActuator(telemetry: BaseTelemetry): boolean {
     return (telemetry.deviceType === DeviceType.LedActuator) || (telemetry.deviceType === DeviceType.FanActuator);
   }
 
+  /** Return the current actuator state */
   protected actuatorState(telemetry: BaseTelemetry): ActuatorState {
     return (telemetry as LedTelemetry).actuatorState;
   }
 
+  /** Format a sensor reading */
   protected reading(telemetry: BaseTelemetry): string {
     if (telemetry.deviceType === DeviceType.TempAndHumidSensor) {
       const sensor = telemetry as TempAndHumidTelemetry;
@@ -193,6 +191,7 @@ export class DeviceComponent {
     return telemetry.deviceType;
   }
 
+  /** Switch the actuator to the opposite state */
   protected toggleActuator(telemetry: BaseTelemetry): void {
     const macAddress = this.device().macAddress;
     const actuatorState = (this.actuatorState(telemetry) === ActuatorState.On) ? ActuatorState.Off : ActuatorState.On;
@@ -202,6 +201,7 @@ export class DeviceComponent {
     });
   }
 
+  /** Ask the user to confirm before unpair this device */
   protected unpair(): void {
     if (!confirm(`Unpair ${this.formatMacAddress(this.device().macAddress)}?`)) {
       return;
@@ -210,10 +210,12 @@ export class DeviceComponent {
     this.unpairRequested.emit();
   }
 
+  /** Return true if the device is an actuator */
   private isActuatorDevice(device: DeviceResponse): boolean {
     return (device.deviceType === DeviceType.LedActuator) || (device.deviceType === DeviceType.FanActuator);
   }
 
+  /** Shows the error message */
   private showError(error: HttpErrorResponse, fallback: string): void {
     this.errorMessageChange.emit(typeof error.error === 'string' ? error.error : fallback);
   }

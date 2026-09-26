@@ -1,7 +1,9 @@
 <div class="page page-centered">
+  <!-- Registration form -->
   <form class="card" [formGroup]="form" (ngSubmit)="submit()">
     <h1 class="title mb-6">Create account</h1>
 
+    <!-- Name, email and password fields -->
     <label class="field">
       <span class="field-label">Name</span>
       <input class="field-input" type="text" formControlName="name" autocomplete="name" />
@@ -26,10 +28,12 @@
       }
     </label>
 
+    <!-- Error from the server -->
     @if (errorMessage(); as message) {
       <p class="alert-error">{{ message }}</p>
     }
 
+    <!-- Submit button -->
     <button class="button-primary w-full" type="submit" [disabled]="form.invalid || isSubmitting()">
       {{ isSubmitting() ? 'Creating…' : 'Create account' }}
     </button>

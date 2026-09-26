@@ -24,6 +24,7 @@ export class LoginComponent {
     password: ['', [Validators.required]]
   });
 
+  /** Signs in and opens the dashboard */
   protected submit(): void {
     if (this.form.invalid || this.isSubmitting()) {
       return;

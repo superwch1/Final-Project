@@ -18,11 +18,13 @@ export class TelemetryService {
 
     public readonly telemetry = this.latest.asReadonly();
 
+    /** Open the WebSocket connection */
     public connect(): void {
         this.shouldReconnect = true;
         this.open();
     }
 
+    /** Close the WebSocket connection */
     public disconnect(): void {
         this.shouldReconnect = false;
 
@@ -35,10 +37,12 @@ export class TelemetryService {
         this.webSocket = null;
     }
 
+    /** Remove separators from a MAC address and upper-cases it */
     public static normalizeMacAddress(macAddress: string): string {
         return macAddress.replace(/[:-]/g, '').toUpperCase();
     }
 
+    /** Open the WebSocket and signs in with the token */
     private open(): void {
         this.webSocket = new WebSocket('ws://192.168.1.7:5000/dashboard/ws');
 

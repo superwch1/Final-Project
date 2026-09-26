@@ -18,22 +18,11 @@ export class RoomComponent {
   private readonly roomApiService = inject(RoomApiService);
   private readonly formBuilder = inject(FormBuilder);
 
-  /** The room this card shows. */
   readonly room = input.required<RoomResponse>();
-
-  /** Every room the user owns, so a sensor can drive an actuator in another room. */
   readonly rooms = input.required<RoomResponse[]>();
-
-  /** Every policy the user owns, shared with the other rooms. */
   readonly policies = model.required<PolicyResponse[]>();
-
-  /** Raised after the room is renamed or a device is paired or unpaired. */
   readonly roomUpdated = output<RoomResponse>();
-
-  /** Raised with the room ID after the room is deleted. */
   readonly roomDeleted = output<string>();
-
-  /** Raised with an error to show, or null to clear it. */
   readonly errorMessageChange = output<string | null>();
 
   protected readonly deviceForm = this.formBuilder.nonNullable.group({
@@ -41,6 +30,7 @@ export class RoomComponent {
     name: ['', [Validators.required, Validators.maxLength(MaxNameLength)]]
   });
 
+  /** Renames the room */
   protected renameRoom(): void {
     const room = this.room();
     const name = prompt('New name', room.name)?.trim();
@@ -58,6 +48,7 @@ export class RoomComponent {
     });
   }
 
+  /** Deletes the room */
   protected deleteRoom(): void {
     const room = this.room();
 
@@ -74,6 +65,7 @@ export class RoomComponent {
     });
   }
 
+  /** Pairs a device to this room */
   protected pairDevice(): void {
     if (this.deviceForm.invalid) {
       return;
@@ -94,7 +86,7 @@ export class RoomComponent {
     });
   }
 
-  /** Unpairs a device after its row has confirmed with the user. */
+  /** Unpairs a device */
   protected unpairDevice(macAddress: string): void {
     this.roomApiService.UnpairDevice(this.room().id, macAddress).subscribe({
       next: () => {
@@ -109,6 +101,7 @@ export class RoomComponent {
     });
   }
 
+  /** Shows the error message */
   private showError(error: HttpErrorResponse, fallback: string): void {
     this.errorMessageChange.emit(typeof error.error === 'string' ? error.error : fallback);
   }

@@ -33,8 +33,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     name: ['', [Validators.required, Validators.maxLength(MaxNameLength)]]
   });
 
+  /** Load rooms and policies when signed in */
   ngOnInit(): void {
-    // Signed-out visitors only see the sign in and register links.
     if (!this.isSignedIn()) {
       return;
     }
@@ -43,19 +43,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.telemetryService.connect();
   }
 
+  /** Stop live telemetry when the page closes */
   ngOnDestroy(): void {
     this.telemetryService.disconnect();
   }
 
+  /** Returns true if the user has a valid access token */
   protected isSignedIn(): boolean {
     return this.authService.isSignedIn();
   }
 
+  /** Returns the user's name */
   protected name(): string | null {
     return this.authService.name();
   }
 
-  /** Signs out and drops the account's data, so the next account starts clean. */
+  /** Signs out */
   protected signOut(): void {
     this.authService.signOut();
     this.telemetryService.disconnect();
@@ -66,6 +69,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.isLoading.set(true);
   }
 
+  /** Creates a room */
   protected createRoom(): void {
     if (this.roomForm.invalid) {
       return;
@@ -81,18 +85,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Swap in a room the room card changed. */
-  protected replaceRoom(updated: RoomResponse): void {
+  /** Update a room */
+  protected updateRoom(updated: RoomResponse): void {
     this.rooms.update(rooms => rooms.map(x => (x.id === updated.id) ? updated : x));
   }
 
-  /** Drop a room the room card deleted. */
+  /** Removes a room */
   protected removeRoom(roomId: string): void {
     this.rooms.update(rooms => rooms.filter(x => x.id !== roomId));
   }
 
+  /** Loads the user's policies and rooms */
   private load(): void {
-    // Needed so an actuator driven by a policy can show its override switch.
     this.policyApiService.GetPolicies().subscribe({
       next: (policies) => this.policies.set(policies),
       error: (error: HttpErrorResponse) => this.showError(error, 'Could not load your policies.')
@@ -110,6 +114,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Shows the error message */
   private showError(error: HttpErrorResponse, fallback: string): void {
     this.errorMessage.set(typeof error.error === 'string' ? error.error : fallback);
   }
