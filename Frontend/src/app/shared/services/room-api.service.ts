@@ -5,7 +5,6 @@ import { PairDeviceRequest } from "../models/request/pair-device-request.interfa
 import { UpdateRoomRequest } from "../models/request/update-room-request.interface";
 import { DeviceResponse } from "../models/response/device-response.interface";
 import { RoomResponse } from "../models/response/room-response.interface";
-import { AuthService } from "./auth.service";
 
 @Injectable({
     providedIn: 'root'
@@ -13,41 +12,35 @@ import { AuthService } from "./auth.service";
 
 export class RoomApiService {
     private readonly http = inject(HttpClient);
-    private readonly authService = inject(AuthService);
-    private readonly baseUrl = "http://192.168.1.7:5000/room";
+    private readonly baseUrl = "room";
 
     /** Return every room owned by the account */
     public GetRooms() {
-        return this.http.get<RoomResponse[]>(this.baseUrl, { headers: this.headers() });
+        return this.http.get<RoomResponse[]>(this.baseUrl);
     }
 
     /** Create a room */
     public CreateRoom(request: CreateRoomRequest) {
-        return this.http.post<RoomResponse>(this.baseUrl, request, { headers: this.headers() });
+        return this.http.post<RoomResponse>(this.baseUrl, request);
     }
 
     /** Rename a room */
     public RenameRoom(roomId: string, request: UpdateRoomRequest) {
-        return this.http.put<RoomResponse>(`${this.baseUrl}/${roomId}`, request, { headers: this.headers() });
+        return this.http.put<RoomResponse>(`${this.baseUrl}/${roomId}`, request);
     }
 
     /** Delete a room and unpair its devices */
     public DeleteRoom(roomId: string) {
-        return this.http.delete<void>(`${this.baseUrl}/${roomId}`, { headers: this.headers() });
+        return this.http.delete<void>(`${this.baseUrl}/${roomId}`);
     }
 
     /** Pair a device to a room */
     public PairDevice(roomId: string, request: PairDeviceRequest) {
-        return this.http.post<DeviceResponse>(`${this.baseUrl}/${roomId}/device`, request, { headers: this.headers() });
+        return this.http.post<DeviceResponse>(`${this.baseUrl}/${roomId}/device`, request);
     }
 
     /** Remove a device from a room */
     public UnpairDevice(roomId: string, macAddress: string) {
-        return this.http.delete<void>(`${this.baseUrl}/${roomId}/device/${macAddress}`, { headers: this.headers() });
-    }
-
-    /** Return the authorization header with the access token */
-    private headers() {
-        return { Authorization: `Bearer ${this.authService.getToken() ?? ''}` };
+        return this.http.delete<void>(`${this.baseUrl}/${roomId}/device/${macAddress}`);
     }
 }

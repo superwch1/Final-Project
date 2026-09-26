@@ -13,11 +13,11 @@ export class AccountApiService {
 
     /** Creates an account */
     public CreateAccount(request: CreateAccountRequest) {
-        return this.http.post<AuthResponse>("http://192.168.1.7:5000/account", request);
+        return this.http.post<AuthResponse>("account", request);
     }
 
     /** Signs in with email and password */
     public Login(request: LoginRequest) {
-        return this.http.post<AuthResponse>("http://192.168.1.7:5000/account/login", request);
+        return this.http.post<AuthResponse>("account/login", request);
     }
 }

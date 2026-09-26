@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
+import { ApiHost } from "../interceptors/api.interceptor";
 import { BaseTelemetry } from "../models/telemetry/base-telemetry.interface";
 import { AuthService } from "./auth.service";
 
@@ -44,7 +45,7 @@ export class TelemetryService {
 
     /** Open the WebSocket and signs in with the token */
     private open(): void {
-        this.webSocket = new WebSocket('ws://192.168.1.7:5000/dashboard/ws');
+        this.webSocket = new WebSocket(`ws://${ApiHost}/dashboard/ws`);
 
         this.webSocket.onopen = () => this.webSocket?.send(this.authService.getToken() ?? '');
 
