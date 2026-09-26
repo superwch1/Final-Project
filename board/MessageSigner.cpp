@@ -17,7 +17,7 @@ bool MessageSigner::isSynced() {
 }
 
 String MessageSigner::signMessage(String macAddress, String deviceType, String data) {
-  // Current time in milliseconds. Unsigned subtraction stays correct when millis() wraps.
+
   uint64_t timestamp = _serverTimeMs + (uint64_t)(millis() - _millisAtSync);
 
   String messageWithTimestamp = normalizeMacAddress(macAddress) + "|" + deviceType + "|" + String((unsigned long long)timestamp) + "|" + data;

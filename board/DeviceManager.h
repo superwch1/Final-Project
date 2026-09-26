@@ -15,10 +15,19 @@ enum DeviceType {
 
 class DeviceManager {
   public:
+    /// Set up the pins and detects the device type
     DeviceManager(int typePin1, int typePin2, int inputPin, int outputPin);
+
+    /// Get the device type name
     String getType(); 
+
+    /// Process the message and Switches the actuator on or off
     void processMessage(String message);
+
+    /// Send the telemetry in JSON
     Event<String> onTelemetrySent;
+
+    /// Raise onTelemetrySent per telemetry interval
     void loop();
 
   private:

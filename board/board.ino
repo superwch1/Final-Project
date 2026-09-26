@@ -26,6 +26,7 @@ WebSocketClient webSocketClient(host, port, path);
 const String DeviceKey = "";
 MessageSigner messageSigner(DeviceKey);
 
+/// Connects to WiFi and the backend, then wires up clock sync, actuator commands and signed telemetry
 void setup() {
   Serial.begin(115200);
 
@@ -47,7 +48,6 @@ void setup() {
 
       if (deserializeJson(doc, message) == DeserializationError::Ok && doc["serverTime"].is<uint64_t>()) {
         messageSigner.syncTime(doc["serverTime"].as<uint64_t>());
-        Serial.println("Clock synced with the server");
       }
 
       return;
@@ -61,22 +61,12 @@ void setup() {
       return;
     }
 
-    Serial.print("heap before sign: ");
-    Serial.println(ESP.getFreeHeap());
-
     String message = messageSigner.signMessage(WiFi.macAddress(), deviceManager.getType(), telemetry);
-
-    Serial.print("signed, length ");
-    Serial.print(message.length());
-    Serial.print(", heap ");
-    Serial.println(ESP.getFreeHeap());
-
     webSocketClient.sendMessage(message);
-
-    Serial.println("sent");
   });
 }
 
+/// Runs the WebSocket client and the device on every loop
 void loop() {
   webSocketClient.loop();
   deviceManager.loop();
