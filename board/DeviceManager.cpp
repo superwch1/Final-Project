@@ -81,7 +81,7 @@ void DeviceManager::loop() {
   if (_type == LedActuator || _type == FanActuator) {
     doc["actuatorState"] = digitalRead(_outputPin) == HIGH ? "On" : "Off";  
   }
-  else if (_type == LightSensor) {.
+  else if (_type == LightSensor) {
     int rawReading = analogRead(A0);
     int lightReading = constrain(map(rawReading, 0, 1023, 100, 0), 0, 100);
     doc["lightReading"] = lightReading;
